@@ -11,12 +11,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.38.6",
+    "@coinbase/coinbase-sdk": "^0.10.0",
     "@libsql/client": "^0.15.15",
     "dotenv": "^16.2.0",
     "drizzle-orm": "^0.44.7",
     "express": "^5.1.0",
-    "node-telegram-bot-api": "^0.66.0",
-    "@coinbase/coinbase-sdk": "^0.10.0"
+    "node-telegram-bot-api": "^0.66.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
