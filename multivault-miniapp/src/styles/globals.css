@@ -1,0 +1,28 @@
+/* === MINIMAL MULTIVAULT GLOBALS === */
+
+:root {
+    --background: #0a0e0f;
+    --foreground: #b7ff00;
+    --primary: #b7ff00;
+    --primary-foreground: #0a0e0f;
+    --secondary: #479f78;
+    --destructive: #d4183d;
+    --border: rgba(183, 255, 0, 0.3);
+  
+    font-family: system-ui, sans-serif;
+    font-size: 16px;
+  }
+  
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+  }
+  
+  button, input, textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--foreground);
+  }
+  
+  
