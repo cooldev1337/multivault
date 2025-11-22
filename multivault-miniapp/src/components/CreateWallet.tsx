@@ -7,8 +7,10 @@ import { Label } from './ui/label';
 import { Card } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ArrowLeft, Plus, Trash2, Users } from 'lucide-react';
-import type { MemberRole } from '../types';
+import type { MemberRole, User, Member } from '../types';
 import { toast } from 'sonner';
+import { validateWalletForm, validateEmail } from '../utils/validation/validateWallet';
+import { Captcha } from './Captcha';
 
 interface NewMember {
   email: string;
@@ -17,11 +19,14 @@ interface NewMember {
 
 export const CreateWallet: React.FC = () => {
   const navigate = useNavigate();
-  const { createWallet, selectWallet, currentUser } = useWallet();
+  const { setCurrentWallet, currentUser, setCurrentUser, setMembers: setContextMembers } = useWallet();
   const [walletName, setWalletName] = useState('');
   const [members, setMembers] = useState<NewMember[]>([
-    { email: currentUser?.email || '', role: 'admin' }
+    { email: '', role: 'admin' }
   ]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [emailErrors, setEmailErrors] = useState<Record<number, string>>({});
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
   const addMember = () => {
     setMembers([...members, { email: '', role: 'contributor' }]);
@@ -29,31 +34,113 @@ export const CreateWallet: React.FC = () => {
 
   const removeMember = (index: number) => {
     setMembers(members.filter((_, i) => i !== index));
+    setEmailErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[index];
+      // Reindex errors
+      const reindexed: Record<number, string> = {};
+      Object.keys(newErrors).forEach((key) => {
+        const oldIndex = parseInt(key);
+        if (oldIndex > index) {
+          reindexed[oldIndex - 1] = newErrors[oldIndex];
+        } else if (oldIndex < index) {
+          reindexed[oldIndex] = newErrors[oldIndex];
+        }
+      });
+      return reindexed;
+    });
   };
 
   const updateMember = (index: number, field: keyof NewMember, value: string) => {
     const updated = [...members];
     updated[index] = { ...updated[index], [field]: value };
     setMembers(updated);
+
+    // Validate email in real-time
+    if (field === 'email') {
+      const emailValidation = validateEmail(value);
+      if (value && !emailValidation.isValid) {
+        setEmailErrors((prev) => ({ ...prev, [index]: emailValidation.error }));
+      } else {
+        setEmailErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[index];
+          return newErrors;
+        });
+      }
+    }
+
+    // Clear general errors when user types
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[`members.${index}.${field}`];
+      delete newErrors.members;
+      return newErrors;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!walletName.trim()) {
-      toast.error('Please enter a wallet name');
+    // Validate captcha
+    if (!captchaVerified) {
+      toast.error('Please complete the security verification');
       return;
     }
 
-    if (members.some(m => !m.email.trim())) {
-      toast.error('All members must have an email address');
+    // Validate form with Zod
+    const validation = validateWalletForm({
+      walletName,
+      members: members.map(m => ({ email: m.email, role: m.role })),
+    });
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      toast.error('Please fix the errors in the form');
       return;
     }
 
-    const newWallet = createWallet(walletName, members);
-    selectWallet(newWallet.id);
+    // Create user if doesn't exist (from first member email)
+    let userToUse = currentUser;
+    if (!userToUse && members[0]?.email) {
+      const newUser: User = {
+        id: crypto.randomUUID(),
+        name: members[0].email.split('@')[0],
+        email: members[0].email,
+        wallet: `0x${crypto.randomUUID().replace(/-/g, '').slice(0, 40)}`,
+        registrationDate: new Date(),
+      };
+      setCurrentUser(newUser);
+      userToUse = newUser;
+    }
+
+    // Create wallet logic - simplified for frontend only
+    const newWallet = {
+      id: crypto.randomUUID(),
+      name: walletName,
+      primaryAdmin: userToUse?.id || '',
+      cdpIntegration: false,
+      creationDate: new Date(),
+      balance: 0,
+      token: 'USDC',
+    };
+    setCurrentWallet(newWallet);
+    
+    // Create members from the form
+    const newMembers: Member[] = members.map((m, index) => ({
+      id: crypto.randomUUID(),
+      userId: index === 0 ? (userToUse?.id || '') : '',
+      walletId: newWallet.id,
+      role: m.role,
+      status: 'active',
+      user: index === 0 ? userToUse || undefined : undefined,
+    }));
+    setContextMembers(newMembers);
+    
     toast.success('Wallet created successfully');
-    navigate('/dashboard');
+    setTimeout(() => {
+      navigate('/proposals');
+    }, 500);
   };
 
   return (
@@ -85,11 +172,23 @@ export const CreateWallet: React.FC = () => {
                 <Input
                   id="wallet-name"
                   value={walletName}
-                  onChange={(e) => setWalletName(e.target.value)}
+                  onChange={(e) => {
+                    setWalletName(e.target.value);
+                    setErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.walletName;
+                      return newErrors;
+                    });
+                  }}
                   placeholder="e.g., Team Andes Trip"
-                  className="mt-2 bg-input-background border-border text-foreground placeholder:text-muted-foreground"
+                  className={`mt-2 bg-input-background border-border text-foreground placeholder:text-muted-foreground ${
+                    errors.walletName ? 'border-red-500' : ''
+                  }`}
                   required
                 />
+                {errors.walletName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.walletName}</p>
+                )}
               </div>
             </div>
           </Card>
@@ -125,10 +224,17 @@ export const CreateWallet: React.FC = () => {
                       value={member.email}
                       onChange={(e) => updateMember(index, 'email', e.target.value)}
                       placeholder="member@example.com"
-                      className="mt-1 bg-input-background border-border text-foreground placeholder:text-muted-foreground"
+                      className={`mt-1 bg-input-background border-border text-foreground placeholder:text-muted-foreground ${
+                        errors[`members.${index}.email`] || emailErrors[index] ? 'border-red-500' : ''
+                      }`}
                       disabled={index === 0}
                       required
                     />
+                    {(errors[`members.${index}.email`] || emailErrors[index]) && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors[`members.${index}.email`] || emailErrors[index]}
+                      </p>
+                    )}
                   </div>
                   <div className="w-40">
                     <Label htmlFor={`role-${index}`} className="text-primary text-sm">
@@ -167,6 +273,10 @@ export const CreateWallet: React.FC = () => {
               ))}
             </div>
 
+            {errors.members && (
+              <p className="text-red-500 text-sm mt-2">{errors.members}</p>
+            )}
+
             <div className="mt-4 p-4 bg-background/50 rounded-lg">
               <h4 className="text-primary text-sm mb-2">Role Permissions:</h4>
               <ul className="space-y-1 text-xs text-muted-foreground">
@@ -175,6 +285,11 @@ export const CreateWallet: React.FC = () => {
                 <li><span className="text-primary">Contributor:</span> Can create expenses, view transactions</li>
               </ul>
             </div>
+          </Card>
+
+          {/* Captcha */}
+          <Card className="p-6 bg-card/50 border-border/50">
+            <Captcha onVerify={setCaptchaVerified} />
           </Card>
 
           {/* Submit */}
@@ -189,7 +304,8 @@ export const CreateWallet: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={!captchaVerified}
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               Create Wallet
             </Button>

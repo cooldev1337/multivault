@@ -20,7 +20,7 @@ function OnboardingSkeleton({ onDone }: { onDone: () => void }) {
     setTimeout(() => {
       setLoading(false);
       onDone();
-    }, 1500);
+    }, 2000);
   }, [onDone]);
 
   return (

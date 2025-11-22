@@ -50,9 +50,10 @@ export const TelegramOnboarding: React.FC = () => {
       });
     }
 
-    // Navigate after a brief delay for animation
+    // Navigate to proposals screen after onboarding
+    // If no wallet exists, user will be redirected to create wallet
     setTimeout(() => {
-      navigate('/dashboard');
+      navigate('/proposals');
     }, 500);
   };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Landing from "./components/Landing";
+import { Landing } from "./components/Landing";
 import { Dashboard } from "./components/Dashboard";
 import { TelegramOnboarding } from "./components/TelegramOnboarding";
 import OnboardingSkeleton from "./components/OnboardingSkeleton";
@@ -9,6 +9,7 @@ import { Web3AuthProvider } from "./components/Web3AuthProvider";
 import { WalletProvider } from "./contexts/WalletContext";
 import { TelegramProvider } from "./contexts/TelegramContext";
 import { CreateWallet } from "./components/CreateWallet";
+import { ProposalsScreen } from "./components/ProposalsScreen";
 
 // Dashboard route wrapper
 function DashboardRoute() {
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="/onboarding" element={<TelegramOnboarding />} />
                 <Route path="/dashboard" element={<DashboardRoute />} />
                 <Route path="/create-wallet" element={<CreateWallet />} />
+                <Route path="/proposals" element={<ProposalsScreen />} />
               </Routes>
             </Router>
           )}

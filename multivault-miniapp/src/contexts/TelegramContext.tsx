@@ -14,6 +14,7 @@ interface TelegramUser {
 
 interface TelegramContextType {
   user: TelegramUser | null;
+  isInTelegram: boolean;
   hapticFeedback: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
   hapticNotification: (type: 'error' | 'success' | 'warning') => void;
   showMainButton: (text: string, onClick: () => void) => void;
@@ -26,11 +27,13 @@ const TelegramContext = createContext<TelegramContextType | undefined>(undefined
 export const TelegramProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [ready, setReady] = useState(false);
+  const [isInTelegram, setIsInTelegram] = useState(false);
 
   useEffect(() => {
     try {
       WebApp.ready();
       setReady(true);
+      setIsInTelegram(true);
       
       // Get user data from Telegram
       const initData = WebApp.initDataUnsafe;
@@ -41,6 +44,7 @@ export const TelegramProvider = ({ children }: { children: ReactNode }) => {
       console.warn('Telegram WebApp not available:', error);
       // Fallback for development
       setReady(true);
+      setIsInTelegram(false);
       setUser({
         id: 123456789,
         first_name: 'Test',
@@ -94,6 +98,7 @@ export const TelegramProvider = ({ children }: { children: ReactNode }) => {
     <TelegramContext.Provider
       value={{
         user,
+        isInTelegram,
         hapticFeedback,
         hapticNotification,
         showMainButton,
