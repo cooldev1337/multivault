@@ -1,68 +1,133 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --font-size: 16px;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Theme Colors */
+  --background: #0a0e0f;
+  --foreground: #b7ff00;
+  --card: #0a0e0f;
+  --card-foreground: #b7ff00;
+  --popover: #0a0e0f;
+  --popover-foreground: #b7ff00;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --primary: #b7ff00;
+  --primary-foreground: #0a0e0f;
+
+  --secondary: #479f78;
+  --secondary-foreground: #030213;
+
+  --muted: oklch(.269 0 0);
+  --muted-foreground: oklch(.708 0 0);
+
+  --accent: #479f78;
+  --accent-foreground: #0a0e0f;
+
+  --destructive: #d4183d;
+  --destructive-foreground: #fff;
+
+  --border: #b7ff0033;
+  --input: transparent;
+  --input-background: #b7ff000d;
+
+  --ring: #b7ff00;
+
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+
+  --radius: 0.625rem;
+
+  /* Charts */
+  --chart-1: #b7ff00;
+  --chart-2: #479f78;
+  --chart-3: #d4183d;
+  --chart-4: oklch(.828 .189 84.429);
+  --chart-5: oklch(.769 .188 70.08);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+/* Dark mode (identical in your theme) */
+.dark {
+  --background: #0a0e0f;
+  --foreground: #b7ff00;
+  --card: #0a0e0f;
+  --card-foreground: #b7ff00;
+  --popover: #0a0e0f;
+  --popover-foreground: #b7ff00;
+
+  --primary: #b7ff00;
+  --primary-foreground: #0a0e0f;
+
+  --secondary: #479f78;
+  --secondary-foreground: #030213;
+
+  --muted: oklch(.269 0 0);
+  --muted-foreground: oklch(.708 0 0);
+
+  --accent: #479f78;
+  --accent-foreground: #0a0e0f;
+
+  --destructive: #d4183d;
+  --destructive-foreground: #fff;
+
+  --border: #b7ff0033;
+  --input: #b7ff001a;
+  --ring: #b7ff00;
+
+  --chart-1: #b7ff00;
+  --chart-2: #479f78;
+  --chart-3: #d4183d;
+  --chart-4: oklch(.627 .265 303.9);
+  --chart-5: oklch(.645 .246 16.439);
 }
-a:hover {
-  color: #535bf2;
+
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+/* Global */
+html {
+  font-size: var(--font-size);
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Basic Elements */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+input,
+textarea,
+select {
+  background: var(--input-background);
+  padding: 10px;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  padding: 10px 14px;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Utility: visually hidden scrollbar (Telegram Mini App style) */
+::-webkit-scrollbar {
+  width: 0px;
 }
