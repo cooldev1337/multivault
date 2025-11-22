@@ -1,25 +1,18 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Landing from "./components/Landing";
-import Dashboard from "./components/Dashboard";
+import { Dashboard } from "./components/Dashboard";
 import { TelegramOnboarding } from "./components/TelegramOnboarding";
 import OnboardingSkeleton from "./components/OnboardingSkeleton";
 import { Toaster } from "./components/ui/sonner";
 import { Web3AuthProvider } from "./components/Web3AuthProvider";
 import { WalletProvider } from "./contexts/WalletContext";
+import { TelegramProvider } from "./contexts/TelegramContext";
 import { CreateWallet } from "./components/CreateWallet";
 
 // Dashboard route wrapper
 function DashboardRoute() {
-  return (
-    <Dashboard
-      wallet={null}
-      onCreateProposal={() => {
-        // TODO: Implement proposal creation
-        console.log("Create proposal clicked");
-      }}
-    />
-  );
+  return <Dashboard />;
 }
 
 export default function App() {
@@ -34,7 +27,8 @@ export default function App() {
   return (
     <div style={{ color: "dark", padding: 20 }}>
       <Web3AuthProvider>
-        <WalletProvider>
+        <TelegramProvider>
+          <WalletProvider>
           {loading ? (
             <OnboardingSkeleton onDone={() => setLoading(false)} />
           ) : (
@@ -58,7 +52,8 @@ export default function App() {
               }
             }}
           />
-        </WalletProvider>
+          </WalletProvider>
+        </TelegramProvider>
       </Web3AuthProvider>
     </div>
   );

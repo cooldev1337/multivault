@@ -1,111 +1,108 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card } from './ui/card';
+import { ArrowLeft, Link as LinkIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const JoinWallet: React.FC = () => {
   const navigate = useNavigate();
-  const [inviteLink, setInviteLink] = useState("");
+  const [inviteLink, setInviteLink] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!inviteLink.trim()) {
-      alert("Please enter an invite link");
+      toast.error('Please enter an invite link');
       return;
     }
 
-    alert("Joined wallet successfully");
-    navigate("/dashboard");
+    // In a real app, this would verify and join the wallet
+    toast.success('Joined wallet successfully');
+    navigate('/dashboard');
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      {/* Header */}
-      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
-        <button onClick={() => navigate("/")} style={{ padding: "6px 10px" }}>
-          ← Back
-        </button>
-        <div>
-          <h2>Join a Wallet</h2>
-          <p style={{ fontSize: 12, color: "#555" }}>Enter your invite link</p>
-        </div>
-      </div>
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} style={{ maxWidth: 500 }}>
-        <div
-          style={{
-            border: "1px solid #ccc",
-            padding: 16,
-            borderRadius: 8,
-            marginBottom: 20,
-          }}
-        >
-          <label style={{ fontWeight: "bold" }}>Invite Link</label>
-          <input
-            type="text"
-            value={inviteLink}
-            onChange={(e) => setInviteLink(e.target.value)}
-            placeholder="https://BITMATE.app/invite/..."
-            style={{
-              display: "block",
-              width: "100%",
-              marginTop: 8,
-              padding: 10,
-              border: "1px solid #ccc",
-              borderRadius: 6,
-            }}
-          />
-          <p style={{ fontSize: 12, marginTop: 6, color: "#555" }}>
-            Ask a wallet admin to share the invite link with you.
-          </p>
-        </div>
-
-        <div
-          style={{
-            border: "1px solid #ccc",
-            padding: 16,
-            borderRadius: 8,
-            marginBottom: 20,
-          }}
-        >
-          <h3>What happens next?</h3>
-          <ul style={{ paddingLeft: 20 }}>
-            <li>Your request is sent to the admin</li>
-            <li>After approval, you get access</li>
-            <li>Then you can manage expenses</li>
-          </ul>
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            style={{
-              flex: 1,
-              padding: "10px 0",
-              border: "1px solid #000",
-              background: "#fff",
-              cursor: "pointer",
-            }}
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border/50 px-4 py-4">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/')}
+            className="text-primary"
           >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            style={{
-              flex: 1,
-              padding: "10px 0",
-              background: "#000",
-              color: "#fff",
-              cursor: "pointer",
-              border: "none",
-            }}
-          >
-            Join Wallet
-          </button>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h2 className="text-primary">Join a Wallet</h2>
+            <p className="text-xs text-muted-foreground">Enter your invite link</p>
+          </div>
         </div>
-      </form>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card className="p-6 bg-card/50 border-border/50">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="invite-link" className="text-primary">Invite Link</Label>
+                <div className="relative mt-2">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="invite-link"
+                    value={inviteLink}
+                    onChange={(e) => setInviteLink(e.target.value)}
+                    placeholder="https://MULTIVAULT.app/invite/..."
+                    className="pl-10 bg-input-background border-border text-foreground placeholder:text-muted-foreground"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ask a wallet admin to share the invite link with you
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-card/50 border-border/50">
+            <h3 className="text-primary mb-3">What happens next?</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary">1.</span>
+                <span>Your request will be sent to the wallet administrator</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary">2.</span>
+                <span>Once approved, you'll have access to the shared wallet</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary">3.</span>
+                <span>You can start viewing and managing group expenses</span>
+              </li>
+            </ul>
+          </Card>
+
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="flex-1 border-border text-foreground"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Join Wallet
+            </Button>
+          </div>
+        </form>
+      </main>
     </div>
   );
 };

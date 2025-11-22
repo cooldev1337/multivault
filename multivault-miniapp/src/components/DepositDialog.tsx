@@ -1,151 +1,86 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { ArrowDownToLine } from 'lucide-react';
 
 interface DepositDialogProps {
-  onDeposit: (amount: number, description: string) => void;
+  onDeposit: (amount: string) => void;
 }
 
 export function DepositDialog({ onDeposit }: DepositDialogProps) {
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const num = parseFloat(amount);
-
-    if (isNaN(num) || num <= 0) {
-      alert("Please enter a valid amount");
-      return;
+    if (amount && parseFloat(amount) > 0) {
+      onDeposit(amount);
+      setAmount('');
+      setOpen(false);
     }
-
-    onDeposit(num, description);
-    setAmount("");
-    setDescription("");
-    setOpen(false);
   };
 
   return (
-    <div>
-      {/* Open dialog button */}
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          padding: "10px 14px",
-          background: "#b7ff00",
-          color: "#000",
-          border: "none",
-          borderRadius: 6,
-          cursor: "pointer",
-        }}
-      >
-        Add Money
-      </button>
-
-      {/* Dialog */}
-      {open && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0, left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              background: "#0a0e0f",
-              border: "1px solid #b7ff00",
-              padding: 20,
-              borderRadius: 10,
-              width: "90%",
-              maxWidth: 380,
-            }}
-          >
-            <h2 style={{ color: "#b7ff00", marginBottom: 10 }}>
-              Deposit Funds
-            </h2>
-
-            <form onSubmit={handleSubmit}>
-
-              <label style={{ display: "block", marginBottom: 4 }}>
-                Amount (USDC)
-              </label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 6,
-                  border: "1px solid #b7ff00",
-                  marginBottom: 12,
-                  background: "transparent",
-                  color: "#b7ff00",
-                }}
-              />
-
-              <label style={{ display: "block", marginBottom: 4 }}>
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Short description..."
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 6,
-                  border: "1px solid #b7ff00",
-                  marginBottom: 12,
-                  background: "transparent",
-                  color: "#b7ff00",
-                }}
-              />
-
-              {/* Buttons */}
-              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    background: "transparent",
-                    color: "#b7ff00",
-                    border: "1px solid #b7ff00",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    background: "#b7ff00",
-                    color: "#000",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                  }}
-                >
-                  Confirm
-                </button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2 border-border rounded-xl hover:bg-card/60 text-foreground">
+          <ArrowDownToLine className="w-4 h-4" />
+          Deposit
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-card border-border shadow-2xl rounded-3xl max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-primary">
+            Deposit to Community Wallet
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="deposit-amount" className="text-foreground">Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="deposit-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="pl-7 border-border focus:border-primary bg-input-background text-foreground rounded-xl"
+                  required
+                />
               </div>
+            </div>
 
-            </form>
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+              <p className="text-sm text-primary">
+                Funds will be transferred from your personal wallet to the community wallet
+                through a smart contract.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+          <DialogFooter className="gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)} 
+              className="rounded-xl border-border text-foreground"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg rounded-xl"
+            >
+              Confirm Deposit
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
+

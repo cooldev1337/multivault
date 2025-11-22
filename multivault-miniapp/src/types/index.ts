@@ -28,19 +28,8 @@ export interface Member {
   user?: User;
 }
 
-export type TransactionStatus =
-  | 'pending'
-  | 'approved'
-  | 'rejected'
-  | 'executed';
-
-export type TransactionCategory =
-  | 'transportation'
-  | 'lodging'
-  | 'food'
-  | 'entertainment'
-  | 'utilities'
-  | 'other';
+export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'executed';
+export type TransactionCategory = 'transportation' | 'lodging' | 'food' | 'entertainment' | 'utilities' | 'other';
 
 export interface Transaction {
   id: string;
@@ -57,6 +46,7 @@ export interface Transaction {
   requiredApprovals: number;
 }
 
+// Extended wallet type for community wallet display
 export interface CommunityWalletMember {
   address: string;
   name: string;
