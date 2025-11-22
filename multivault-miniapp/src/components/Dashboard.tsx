@@ -1,5 +1,4 @@
-import React from "react";
-import { CommunityWallet } from "../types";
+import type { CommunityWallet } from "../types";
 
 interface Props {
   wallet: CommunityWallet | null;
