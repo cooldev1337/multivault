@@ -5,7 +5,6 @@ import { Dashboard } from "./components/Dashboard";
 import { TelegramOnboarding } from "./components/TelegramOnboarding";
 import OnboardingSkeleton from "./components/OnboardingSkeleton";
 import { Toaster } from "./components/ui/sonner";
-import { Web3AuthProvider } from "./components/Web3AuthProvider";
 import { WalletProvider } from "./contexts/WalletContext";
 import { TelegramProvider } from "./contexts/TelegramContext";
 import { CreateWallet } from "./components/CreateWallet";
@@ -27,9 +26,8 @@ export default function App() {
 
   return (
     <div style={{ color: "dark", padding: 20 }}>
-      <Web3AuthProvider>
-        <TelegramProvider>
-          <WalletProvider>
+      <TelegramProvider>
+        <WalletProvider>
           {loading ? (
             <OnboardingSkeleton onDone={() => setLoading(false)} />
           ) : (
@@ -50,13 +48,12 @@ export default function App() {
               style: {
                 background: "#0a0e0f",
                 border: "1px solid rgba(183,255,0,0.2)",
-                color: "#b7ff00"
-              }
+                color: "#b7ff00",
+              },
             }}
           />
-          </WalletProvider>
-        </TelegramProvider>
-      </Web3AuthProvider>
+        </WalletProvider>
+      </TelegramProvider>
     </div>
   );
 }

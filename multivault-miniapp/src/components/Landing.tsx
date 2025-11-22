@@ -1,10 +1,10 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTelegram } from '../contexts/TelegramContext';
-import { TelegramPrompt } from './TelegramPrompt';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
-import { Wallet, Users, Shield, History } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useTelegram } from "../contexts/TelegramContext";
+import { TelegramPrompt } from "./TelegramPrompt";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
+import { Wallet, Users, Shield, History } from "lucide-react";
 
 export const Landing: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export const Landing: React.FC = () => {
   // If in Telegram, redirect to onboarding
   React.useEffect(() => {
     if (isInTelegram) {
-      navigate('/onboarding');
+      navigate("/onboarding");
     }
   }, [isInTelegram, navigate]);
 
@@ -32,9 +32,9 @@ export const Landing: React.FC = () => {
             <Wallet className="w-8 h-8 text-primary" />
             <h1 className="text-primary">BITMATE</h1>
           </div>
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/dashboard')}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/dashboard")}
             className="text-primary hover:text-primary/80"
           >
             Dashboard
@@ -57,18 +57,18 @@ export const Landing: React.FC = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="w-full sm:w-auto min-w-[200px] bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => navigate('/create-wallet')}
+              onClick={() => navigate("/create-wallet")}
             >
               Create Shared Wallet
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
               className="w-full sm:w-auto min-w-[200px] border-primary text-primary hover:bg-primary/10"
-              onClick={() => navigate('/join-wallet')}
+              onClick={() => navigate("/join-wallet")}
             >
               Join a Wallet
             </Button>
@@ -109,7 +109,8 @@ export const Landing: React.FC = () => {
                 </div>
                 <h4 className="text-primary">Create or Join</h4>
                 <p className="text-sm text-muted-foreground">
-                  Set up a shared wallet for your group or join an existing one with an invite link
+                  Set up a shared wallet for your group or join an existing one
+                  with an invite link
                 </p>
               </div>
               <div className="space-y-2">
@@ -118,7 +119,8 @@ export const Landing: React.FC = () => {
                 </div>
                 <h4 className="text-primary">Record Expenses</h4>
                 <p className="text-sm text-muted-foreground">
-                  Add transactions with descriptions and categories for full transparency
+                  Add transactions with descriptions and categories for full
+                  transparency
                 </p>
               </div>
               <div className="space-y-2">
@@ -127,7 +129,8 @@ export const Landing: React.FC = () => {
                 </div>
                 <h4 className="text-primary">Approve & Execute</h4>
                 <p className="text-sm text-muted-foreground">
-                  Members approve expenses and transactions execute securely on-chain
+                  Members approve expenses and transactions execute securely
+                  on-chain
                 </p>
               </div>
             </div>

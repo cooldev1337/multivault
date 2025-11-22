@@ -1,26 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTelegram } from '../contexts/TelegramContext';
-import { useWallet } from '../contexts/WalletContext';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
-import { Progress } from './ui/progress';
-import { Wallet, Users, Shield, CheckCircle2, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTelegram } from "../contexts/TelegramContext";
+import { useWallet } from "../contexts/WalletContext";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
+import { Progress } from "./ui/progress";
+import {
+  Wallet,
+  Users,
+  Shield,
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { getOrCreateUser } from "../services/api";
+import { toast } from "sonner";
 
 export const TelegramOnboarding: React.FC = () => {
   const navigate = useNavigate();
-  const { user, hapticFeedback, hapticNotification, showMainButton, hideMainButton } = useTelegram();
+  const {
+    user,
+    hapticFeedback,
+    hapticNotification,
+    showMainButton,
+    hideMainButton,
+  } = useTelegram();
   const { setCurrentUser } = useWallet();
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isFetchingWallet, setIsFetchingWallet] = useState(false);
 
   useEffect(() => {
     // Update main button based on step
     if (currentStep < 3) {
-      showMainButton('Continue', () => handleNext());
+      showMainButton("Continue", () => handleNext());
     } else {
-      showMainButton('Get Started', () => handleComplete());
+      showMainButton("Get Started", () => handleComplete());
     }
 
     return () => {
@@ -29,68 +45,97 @@ export const TelegramOnboarding: React.FC = () => {
   }, [currentStep]);
 
   const handleNext = () => {
-    hapticFeedback('medium');
+    hapticFeedback("medium");
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handleComplete = () => {
-    setIsCompleting(true);
-    hapticNotification('success');
-    
-    // Set user from Telegram data
-    if (user) {
-      setCurrentUser({
-        id: `tg-${user.id}`,
-        name: `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`,
-        email: user.username ? `${user.username}@telegram.user` : `user${user.id}@telegram.user`,
-        wallet: `0x${user.id.toString().padStart(40, '0')}`,
-        registrationDate: new Date(),
-      });
+  const handleComplete = async () => {
+    if (!user) {
+      toast.error("Telegram user not found");
+      return;
     }
 
-    // Navigate after a brief delay for animation
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 500);
+    setIsCompleting(true);
+    setIsFetchingWallet(true);
+    hapticNotification("success");
+
+    try {
+      // Obtener usuario y wallet del backend (creada cuando dio /start)
+      const backendUser = await getOrCreateUser({
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
+      });
+
+      // Set user con la wallet address del backend
+      setCurrentUser({
+        id: backendUser.id,
+        name: `${backendUser.firstName}${
+          backendUser.lastName ? " " + backendUser.lastName : ""
+        }`,
+        email: backendUser.username
+          ? `${backendUser.username}@telegram.user`
+          : `user${backendUser.telegramId}@telegram.user`,
+        wallet: backendUser.walletAddress,
+        registrationDate: new Date(backendUser.createdAt),
+      });
+
+      toast.success("Wallet loaded successfully! 🎉");
+
+      // Navigate after a brief delay for animation
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 500);
+    } catch (error) {
+      console.error("Error loading wallet:", error);
+      toast.error("Failed to load wallet. Please try again.");
+      setIsCompleting(false);
+      setIsFetchingWallet(false);
+      hapticNotification("error");
+    }
   };
 
   const steps = [
     {
       number: 1,
       icon: Wallet,
-      title: 'Welcome to BITMATE!',
-      subtitle: user ? `Hello ${user.first_name}! 👋` : 'Hello! 👋',
-      description: 'Your collaborative Web3 wallet to manage group expenses transparently and securely.',
+      title: "Welcome to BITMATE!",
+      subtitle: user ? `Hello ${user.first_name}! 👋` : "Hello! 👋",
+      description:
+        "Your collaborative Web3 wallet to manage group expenses transparently and securely.",
       features: [
-        'Simple and fast payments',
-        'Shared control',
-        'Auditable history',
+        "Simple and fast payments",
+        "Shared control",
+        "Auditable history",
       ],
     },
     {
       number: 2,
       icon: Users,
-      title: 'Frictionless collaboration',
-      subtitle: 'Manage expenses with your team',
-      description: 'Create or join a shared wallet. All members can view, create, and approve expenses in real-time.',
+      title: "Frictionless collaboration",
+      subtitle: "Manage expenses with your team",
+      description:
+        "Create or join a shared wallet. All members can view, create, and approve expenses in real-time.",
       features: [
-        'Simplified multi-signature approvals',
-        'Customizable roles (Admin, Approver, Contributor)',
-        'Instant Telegram notifications',
+        "Simplified multi-signature approvals",
+        "Customizable roles (Admin, Approver, Contributor)",
+        "Instant Telegram notifications",
       ],
     },
     {
       number: 3,
       icon: Shield,
-      title: 'Total transparency',
-      subtitle: 'Powered by Coinbase CDP',
-      description: 'Every transaction is recorded on-chain with complete traceability. No surprises, no distrust.',
+      title: "Total transparency",
+      subtitle: "Powered by Coinbase CDP",
+      description:
+        "Every transaction is recorded on-chain with complete traceability. No surprises, no distrust.",
       features: [
-        'Complete transaction history',
-        'Blockchain verification',
-        'Integrated direct swaps',
+        "Complete transaction history",
+        "Blockchain verification",
+        "Integrated direct swaps",
       ],
     },
   ];
@@ -161,7 +206,7 @@ export const TelegramOnboarding: React.FC = () => {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        hapticFeedback('light');
+                        hapticFeedback("light");
                         setCurrentStep(currentStep - 1);
                       }}
                       className="flex-1 border-border text-foreground"
@@ -185,7 +230,16 @@ export const TelegramOnboarding: React.FC = () => {
                       className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                       disabled={isCompleting}
                     >
-                      {isCompleting ? 'Starting...' : 'Get Started'}
+                      {isCompleting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {isFetchingWallet
+                            ? "Loading wallet..."
+                            : "Starting..."}
+                        </>
+                      ) : (
+                        "Get Started"
+                      )}
                     </Button>
                   )}
                 </div>
@@ -199,15 +253,15 @@ export const TelegramOnboarding: React.FC = () => {
               <button
                 key={step}
                 onClick={() => {
-                  hapticFeedback('light');
+                  hapticFeedback("light");
                   setCurrentStep(step);
                 }}
                 className={`w-2 h-2 rounded-full transition-all ${
                   step === currentStep
-                    ? 'bg-primary w-8'
+                    ? "bg-primary w-8"
                     : step < currentStep
-                    ? 'bg-secondary'
-                    : 'bg-muted'
+                    ? "bg-secondary"
+                    : "bg-muted"
                 }`}
                 disabled={isCompleting}
               />
