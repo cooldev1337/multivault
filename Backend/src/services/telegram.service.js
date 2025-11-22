@@ -1,5 +1,10 @@
 const TelegramBot = require("node-telegram-bot-api");
 const config = require("../config/config");
+require("dotenv").config();
+
+const { CdpClient } = require("@coinbase/cdp-sdk");
+
+const cdp = new CdpClient();
 
 let bot = null;
 
@@ -11,45 +16,52 @@ exports.initBot = () => {
 
   bot = new TelegramBot(config.telegramBotToken, { polling: true });
 
-  bot.onText(/\/start/, (msg) => {
+  bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const firstName = msg.from.first_name || "there";
 
-    const welcomeMessage = `👋 Hey ${firstName}!
-    Welcome to *MultiVault* — the transparent and democratic way to manage money with your group.
+    const userId = msg.from.id;
 
-    💰 *What is MultiVault?*
-    It helps families, friends, neighbors or teams pool money **without trusting a single person**.  
-    Everyone can see deposits, vote on expenses, and control the fund together.
+    const userWallet = await cdp.evm.getOrCreateAccount({
+      name: `${userId}`,
+    });
 
-    ✨ *What can you do here?*
-    • Create a community fund
-    • Invite members easily  
-    • Let everyone contribute freely  
-    • Propose and vote on any expense  
-    • See all deposits and spending in real time  
+    const welcomeMessage = `👋 Hey ${firstName} \\!
+Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
 
-    💡 *Available Commands:*
-    /app - Open MultiVault app
-    /help - Get help and support
-    /start - Show this welcome message
+Your wallet address is \\(click to copy\\):
+\`${userWallet.address}\` 
 
-    "Ready to dive in? Tap the button below! 👇"`;
+💰 *What is MultiVault?*
+It helps families, friends, neighbors or teams pool money **without trusting a single person**\\.  
+Everyone can see deposits, vote on expenses, and control the fund together\\.
+
+✨ *What can you do here?*
+• Create a community fund  
+• Invite members easily  
+• Let everyone contribute freely  
+• Propose and vote on any expense  
+• See all deposits and spending in real time  
+
+💡 *Available Commands:*
+\\/app \\- Open MultiVault app  
+\\/help \\- Get help and support  
+\\/start \\- Show this welcome message  
+
+Ready to dive in\\? Tap the button below 👇`;
 
     const opts = {
-      parse_mode: "Markdown",
-    };
-
-    // Only show button for first-time users
-    opts.reply_markup = {
-      inline_keyboard: [
-        [
-          {
-            text: "🚀 Launch MultiVault",
-            web_app: { url: config.telegramMiniAppUrl },
-          },
+      parse_mode: "MarkdownV2",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🚀 Launch MultiVault",
+              web_app: { url: config.telegramMiniAppUrl },
+            },
+          ],
         ],
-      ],
+      },
     };
 
     bot.sendMessage(chatId, welcomeMessage, opts);
