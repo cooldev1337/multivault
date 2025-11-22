@@ -13,13 +13,62 @@ exports.initBot = () => {
 
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
+    const firstName = msg.from.first_name || "there";
+
+    const welcomeMessage = `👋 Hey ${firstName}!
+    Welcome to *MultiVault* — the transparent and democratic way to manage money with your group.
+
+    💰 *What is MultiVault?*
+    It helps families, friends, neighbors or teams pool money **without trusting a single person**.  
+    Everyone can see deposits, vote on expenses, and control the fund together.
+
+    ✨ *What can you do here?*
+    • Create a community fund
+    • Invite members easily  
+    • Let everyone contribute freely  
+    • Propose and vote on any expense  
+    • See all deposits and spending in real time  
+
+    💡 *Available Commands:*
+    /app - Open MultiVault app
+    /help - Get help and support
+    /start - Show this welcome message
+
+    "Ready to dive in? Tap the button below! 👇"`;
 
     const opts = {
+      parse_mode: "Markdown",
+    };
+
+    // Only show button for first-time users
+    opts.reply_markup = {
+      inline_keyboard: [
+        [
+          {
+            text: "🚀 Launch MultiVault",
+            web_app: { url: config.telegramMiniAppUrl },
+          },
+        ],
+      ],
+    };
+
+    bot.sendMessage(chatId, welcomeMessage, opts);
+  });
+
+  bot.onText(/\/app/, (msg) => {
+    const chatId = msg.chat.id;
+
+    const appMessage = `🚀 *Opening MultiVault...*
+
+    Tap the button below to launch the app:`;
+
+    const opts = {
+      parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "🚀 Abrir MultiVault",
+              text: "🚀 Launch MultiVault",
               web_app: { url: config.telegramMiniAppUrl },
             },
           ],
@@ -27,19 +76,19 @@ exports.initBot = () => {
       },
     };
 
-    bot.sendMessage(
-      chatId,
-      "¡Hola! Bienvenido al MultiVault Bot 🚀\n\nHaz click en el botón para abrir la aplicación:",
-      opts
-    );
+    bot.sendMessage(chatId, appMessage, opts);
   });
 
   bot.onText(/\/help/, (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(
-      chatId,
-      "Comandos disponibles:\n/start - Iniciar bot\n/help - Ver ayuda"
-    );
+    const helpMessage = `🆘 *Need Help?*
+
+    *Available Commands:*
+    /app - Open the MultiVault app
+    /help - Show this help message
+    /start - Return to the welcome screen`;
+
+    bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
   });
 
   bot.on("message", (msg) => {
@@ -48,7 +97,7 @@ exports.initBot = () => {
 
     if (text && text.startsWith("/")) return;
 
-    console.log(`Mensaje recibido de ${chatId}: ${text}`);
+    console.log(`Message received from ${chatId}: ${text}`);
   });
 
   console.log("✅ Telegram bot initialized");
