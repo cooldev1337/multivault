@@ -1,12 +1,13 @@
 const fileCoinService = require("../services/fileCoin.service");
 
-exports.buy = () => {
+exports.buy = (req,res) => {
   const bot = fileCoinService.buy();
+  return bot;
 };
 
 exports.upload = (req,res) => {
 const { pieceCid, size }= fileCoinService.upload(req.body);
- 
+
   return  res.json({pieceCid: pieceCid, size: size }) ;
 };
 
