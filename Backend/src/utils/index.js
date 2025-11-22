@@ -7,9 +7,20 @@ export const getUser = async (userId) => {
   });
 }
 
+export const createUser = async (userId, chatId, walletAddress, payload = "") => {
+  const value = {
+    user: userId.toString(),
+    tgChatId: chatId.toString(),
+    walletAddress: walletAddress,
+  };
+
+  await db.insert(users).values(value).onConflictDoNothing().execute()//returning();
+}
+
+/*
 export const encrypt = (theData) => {
   const cipherPassword = process.env.ENCRYPT_PASS;
-  const iv = generateReferralCode(16);
+  const iv = getRandomNumber(16);
   const cipher = crypto.createCipheriv("aes256", cipherPassword, iv);
   let encrypted = cipher.update(
     theData, 
@@ -33,3 +44,4 @@ export const decrypt = (encryptedData) => {
   decrypted += decipher.final("utf8");
   return decrypted;
 }
+*/
