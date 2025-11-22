@@ -5,9 +5,7 @@ let bot = null;
 
 exports.initBot = () => {
   if (!config.telegramBotToken) {
-    console.warn(
-      "TELEGRAM_BOT_TOKEN not set. Skipping bot initialization."
-    );
+    console.warn("TELEGRAM_BOT_TOKEN not set. Skipping bot initialization.");
     return null;
   }
 
@@ -15,23 +13,23 @@ exports.initBot = () => {
 
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    
+
     const opts = {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: '🚀 Abrir MultiVault',
-              web_app: { url: config.telegramMiniAppUrl }
-            }
-          ]
-        ]
-      }
+              text: "Open MiniApp",
+              web_app: { url: config.telegramMiniAppUrl },
+            },
+          ],
+        ],
+      },
     };
-    
+
     bot.sendMessage(
       chatId,
-      '¡Hola! Bienvenido al MultiVault Bot 🚀\n\nHaz click en el botón para abrir la aplicación:',
+      "Welcome to MultiVault BOT\n\nClick the button to open the miniapp:",
       opts
     );
   });
@@ -40,7 +38,7 @@ exports.initBot = () => {
     const chatId = msg.chat.id;
     bot.sendMessage(
       chatId,
-      "Comandos disponibles:\n/start - Iniciar bot\n/help - Ver ayuda"
+      "Available commands:\n/start - Start bot\n/help - View help"
     );
   });
 
@@ -50,7 +48,7 @@ exports.initBot = () => {
 
     if (text && text.startsWith("/")) return;
 
-    console.log(`Mensaje recibido de ${chatId}: ${text}`);
+    console.log(`Message received from ${chatId}: ${text}`);
   });
 
   console.log("✅ Telegram bot initialized");
