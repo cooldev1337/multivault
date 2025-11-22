@@ -50,10 +50,9 @@ export const TelegramOnboarding: React.FC = () => {
       });
     }
 
-    // Navigate to proposals screen after onboarding
-    // If no wallet exists, user will be redirected to create wallet
+    // Navigate after a brief delay for animation
     setTimeout(() => {
-      navigate('/proposals');
+      navigate('/dashboard');
     }, 500);
   };
 
@@ -61,7 +60,7 @@ export const TelegramOnboarding: React.FC = () => {
     {
       number: 1,
       icon: Wallet,
-      title: 'Welcome to MULTIVAULT!',
+      title: 'Welcome to BITMATE!',
       subtitle: user ? `Hello ${user.first_name}! 👋` : 'Hello! 👋',
       description: 'Your collaborative Web3 wallet to manage group expenses transparently and securely.',
       features: [

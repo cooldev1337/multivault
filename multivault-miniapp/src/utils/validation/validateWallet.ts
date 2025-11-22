@@ -1,23 +1,22 @@
-// utils/validation/validateWallet.ts
 import { z } from "zod";
 
 // Email validation schema
 const emailSchema = z.string().email("Please enter a valid email address");
 
-// Wallet name validation schema
+// Wallet name
 const walletNameSchema = z
   .string()
   .min(3, "Wallet name must be at least 3 characters")
   .max(50, "Wallet name must be less than 50 characters")
   .regex(/^[a-zA-Z0-9\s\-_]+$/, "Wallet name can only contain letters, numbers, spaces, hyphens, and underscores");
 
-// Member validation schema
+// Member validation 
 const memberSchema = z.object({
   email: emailSchema,
   role: z.enum(["admin", "approver", "contributor"]),
 });
 
-// Wallet creation schema
+// Wallet creation 
 export const walletCreationSchema = z.object({
   walletName: walletNameSchema,
   members: z

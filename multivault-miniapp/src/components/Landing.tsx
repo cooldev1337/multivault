@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../contexts/TelegramContext';
+import { TelegramPrompt } from './TelegramPrompt';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Wallet, Users, Shield, History } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Wallet, Users, Shield, History } from 'lucide-react';
 export const Landing: React.FC = () => {
   const navigate = useNavigate();
   const { isInTelegram } = useTelegram();
+  const [showPrompt, setShowPrompt] = React.useState(true);
 
   // If in Telegram, redirect to onboarding
   React.useEffect(() => {
@@ -16,6 +18,11 @@ export const Landing: React.FC = () => {
     }
   }, [isInTelegram, navigate]);
 
+  // Show Telegram prompt for first-time web visitors
+  if (!isInTelegram && showPrompt) {
+    return <TelegramPrompt onContinueAnyway={() => setShowPrompt(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -23,7 +30,7 @@ export const Landing: React.FC = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wallet className="w-8 h-8 text-primary" />
-            <h1 className="text-primary">MULTIVAULT</h1>
+            <h1 className="text-primary">BITMATE</h1>
           </div>
           <Button 
             variant="ghost" 
@@ -131,7 +138,7 @@ export const Landing: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 px-4 py-6">
         <div className="max-w-6xl mx-auto text-center text-sm text-muted-foreground">
-          <p>Built with Team MULTIVAULT • Hackathon ETHGLOBAL BA</p>
+          <p>Built with Coinbase CDP • Hackathon Demo</p>
         </div>
       </footer>
     </div>

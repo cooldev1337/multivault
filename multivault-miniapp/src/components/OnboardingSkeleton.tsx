@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const SkeletonBox = ({ height = "20px", width = "100%" }) => (
   <div
@@ -14,11 +14,8 @@ const SkeletonBox = ({ height = "20px", width = "100%" }) => (
 );
 
 function OnboardingSkeleton({ onDone }: { onDone: () => void }) {
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     setTimeout(() => {
-      setLoading(false);
       onDone();
     }, 2000);
   }, [onDone]);
