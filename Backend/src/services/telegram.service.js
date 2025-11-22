@@ -85,10 +85,52 @@ exports.initBot = () => {
 
     *Available Commands:*
     /app - Open the MultiVault app
+    /wallet - View your wallet details
     /help - Show this help message
     /start - Return to the welcome screen`;
 
     bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+  });
+
+  bot.onText(/\/wallet/, async (msg) => {
+    const chatId = msg.chat.id;
+    const telegramId = String(msg.from.id);
+
+    try {
+      const user = await userService.findByTelegramId(telegramId);
+
+      if (!user || !user.walletAddress) {
+        bot.sendMessage(
+          chatId,
+          "❌ You don't have a wallet yet. Use /start to create one.",
+          { parse_mode: "Markdown" }
+        );
+        return;
+      }
+
+      const walletMessage = `💼 *Your Server Wallet Details*
+
+🔑 *Address:*
+\`${user.walletAddress}\`
+
+🌐 *Network:*
+${user.walletNetworkId || "Base Sepolia"}
+
+📋 *Wallet ID:*
+\`${user.walletId}\`
+
+🔐 *Type:* Server-Signer Wallet (Managed by Coinbase)
+
+💡 *Tip:* This is a secure server-managed wallet. You can fund it by sending tokens to the address above.`;
+
+      bot.sendMessage(chatId, walletMessage, { parse_mode: "Markdown" });
+    } catch (error) {
+      console.error("Error handling /wallet command:", error);
+      bot.sendMessage(
+        chatId,
+        "❌ Error retrieving wallet information. Please try again later."
+      );
+    }
   });
 
   bot.on("message", (msg) => {
