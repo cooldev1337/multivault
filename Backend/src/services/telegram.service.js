@@ -27,28 +27,28 @@ exports.initBot = () => {
     });
 
     const welcomeMessage = `👋 Hey ${firstName} \\!
-Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
+    Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
 
-Your wallet address is \\(click to copy\\):
-\`${userWallet.address}\` 
+    Your wallet address is \\(click to copy\\):
+    \`${userWallet.address}\` 
 
-💰 *What is MultiVault?*
-It helps families, friends, neighbors or teams pool money **without trusting a single person**\\.  
-Everyone can see deposits, vote on expenses, and control the fund together\\.
+    💰 *What is MultiVault?*
+    It helps families, friends, neighbors or teams pool money **without trusting a single person**\\.  
+    Everyone can see deposits, vote on expenses, and control the fund together\\.
 
-✨ *What can you do here?*
-• Create a community fund  
-• Invite members easily  
-• Let everyone contribute freely  
-• Propose and vote on any expense  
-• See all deposits and spending in real time  
+    ✨ *What can you do here?*
+    • Create a community fund  
+    • Invite members easily  
+    • Let everyone contribute freely  
+    • Propose and vote on any expense  
+    • See all deposits and spending in real time  
 
-💡 *Available Commands:*
-\\/app \\- Open MultiVault app  
-\\/help \\- Get help and support  
-\\/start \\- Show this welcome message  
+    💡 *Available Commands:*
+    \\/app \\- Open MultiVault app  
+    \\/help \\- Get help and support  
+    \\/start \\- Show this welcome message  
 
-Ready to dive in\\? Tap the button below 👇`;
+    Ready to dive in\\? Tap the button below 👇`;
 
     const opts = {
       parse_mode: "MarkdownV2",
@@ -101,6 +101,78 @@ Ready to dive in\\? Tap the button below 👇`;
     /start - Return to the welcome screen`;
 
     bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+  });
+
+  //Ver saldos,historial
+  //crear wallet
+  //hacer propuesta
+  //votar
+  bot.onText(/\/ownwallet/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    try {
+      // Crear o recuperar wallet
+      const userWallet = await cdp.evm.getOrCreateAccount({
+        name: `${userId}`,
+      });
+
+      // ETH nativo en CDP siempre usa este pseudo-address
+      const ETH_NATIVE_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+
+      // Obtener balances
+      const result = await cdp.evm.listTokenBalances({
+        address: userWallet.address,
+        network: "base-sepolia",
+      });
+
+      // Encontrar balance de ETH
+      const eth = result.balances.find(
+        (b) => b.token.contractAddress === ETH_NATIVE_ADDRESS
+      );
+
+      let balanceInEth = 0;
+
+      if (eth) {
+        const raw = BigInt(eth.amount.amount);
+        const decimals = Number(eth.amount.decimals);
+        balanceInEth = Number(raw) / 10 ** decimals;
+      }
+
+      // --- Transacciones (si quieres activarlas luego) ---
+      // let transactions = [];
+      // try {
+      //   transactions = await cdp.evm.listTransactions({
+      //     address: userWallet.address,
+      //     network: "base-sepolia",
+      //     limit: 5,
+      //   });
+      // } catch (err) {
+      //   console.log("Error retrieving transactions:", err);
+      // }
+
+      // Construcción del mensaje final
+      let walletMessage = `💰 *Your Wallet*\n\n`;
+      walletMessage += `📍 Address: \`${userWallet.address}\`\n\n`;
+      walletMessage += `💵 Balance: *${balanceInEth.toFixed(6)} USDC*\n\n`;
+
+      // Sin transacciones por ahora (comentaste código)
+      // walletMessage += `📊 No recent transactions found.`;
+
+      bot.sendMessage(chatId, walletMessage, {
+        parse_mode: "Markdown",
+      });
+    } catch (error) {
+      console.error("Error fetching wallet info:", error);
+
+      bot.sendMessage(
+        chatId,
+        `❌ Error retrieving wallet information. Please try again later.`,
+        {
+          parse_mode: "Markdown",
+        }
+      );
+    }
   });
 
   bot.on("message", (msg) => {
