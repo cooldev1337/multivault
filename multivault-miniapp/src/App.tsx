@@ -1,9 +1,16 @@
 import React from "react";
 import { TelegramOnboarding } from "./components/TelegramOnboarding";
+import OnboardingSkeleton from "./components/OnboardingSkeleton"; 
+
+import { Toaster } from './components/ui/sonner';
 
 import { Web3AuthProvider } from './components/Web3AuthProvider';
+import { CreateWallet } from './components/CreateWallet';
 
 export default function App() {
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [showPopup, setShowPopup] = useState(false);
   return (
     <div style={{ color: "dark", padding: 20 }}>
       <Web3AuthProvider>
@@ -15,8 +22,6 @@ export default function App() {
                 <Route path="/onboarding" element={<TelegramOnboarding />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/create-wallet" element={<CreateWallet />} />
-                <Route path="/create-expense" element={<CreateExpense />} />
-                <Route path="/join-wallet" element={<JoinWallet />} />
               </Routes>
             </Router>
 
