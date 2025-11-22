@@ -6,6 +6,7 @@ export const users = sqliteTable("users", {
   user: text().notNull(),
   metadataPieceCID: text(),
   tgLastLangCode: text(),
+  walletAddress: text(),
   created: integer().notNull().default(sql`(UNIXEPOCH() * 1000)`),
   updated: integer().$onUpdate(() => sql`(UNIXEPOCH() * 1000)`),
   deleted: integer(),
