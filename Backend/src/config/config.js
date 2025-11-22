@@ -5,5 +5,4 @@ module.exports = {
   databaseUrl: process.env.DATABASE_URL || '',
   jwtSecret: process.env.JWT_SECRET || 'change_this_secret',
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
-  telegramMiniAppUrl: process.env.TELEGRAM_MINI_APP_URL || ''
-};
+  telegramMiniAppUrl: process.env.TELEGRAM_MINI_APP_URL || ''};

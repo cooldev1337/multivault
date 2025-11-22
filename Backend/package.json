@@ -11,9 +11,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.1.0",
+    "@filoz/synapse-sdk": "^0.36.0",
+    "commonjs": "^0.0.1",
     "dotenv": "^16.2.0",
-    "node-telegram-bot-api": "^0.66.0"
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "module": "^2.0.0",
+    "node-telegram-bot-api": "^0.63.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
