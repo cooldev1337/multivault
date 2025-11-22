@@ -53,3 +53,8 @@ Files added:
 - `src/services/user.service.js` — simple in-memory service
 - `src/services/telegram.service.js` — telegram bot service
 - `src/models/user.model.js` — placeholder model
+
+**DB**
+
+Fill the TURSO_CONNECTION_URL, TURSO_AUTH_TOKEN environment variables.
+Run the "pushDB" script from package.json
