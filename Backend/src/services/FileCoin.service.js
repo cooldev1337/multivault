@@ -85,7 +85,7 @@ export const download = (data) => {
   try {
     return downloadstorage(data);
   } catch (error) {
-      return "error";
+      return error;
   }
 
 }
