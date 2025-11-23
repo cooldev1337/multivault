@@ -779,6 +779,7 @@ To vote on a proposal, reply with the format:
         );
 
         const result = await blockchainService.createVault(
+          userId,
           name,
           uniqueAddresses,
           smartAccount,
