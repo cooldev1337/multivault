@@ -7,7 +7,7 @@ export const getUser = async (userId) => {
   });
 }
 
-export const createUser = async (userId, chatId, walletAddress, payload = "") => {
+export const createUser = async (userId, chatId, walletAddress) => {
   const value = {
     user: userId.toString(),
     tgChatId: chatId.toString(),
@@ -15,6 +15,18 @@ export const createUser = async (userId, chatId, walletAddress, payload = "") =>
   };
 
   await db.insert(users).values(value).onConflictDoNothing().execute()//returning();
+}
+
+export const getOrCreateUser = async (userId, chatId, walletAddress) => {
+  const user = await db.query.users.findFirst({
+    where: (user, { eq }) => (eq(user.user, userId)),
+  });
+
+  if (!user) {
+    return createUser(userId, chatId, walletAddress).returning()[0];
+  } else {
+    return user;
+  }
 }
 
 /*
