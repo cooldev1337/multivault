@@ -181,14 +181,6 @@ class BlockchainService {
 
       const formattedUsdcBalance = ethers.formatUnits(usdcBalance, decimals);
 
-      console.log("Vault Info:", {
-        name,
-        members,
-        ethBalance: balance.toString(),
-        usdcBalance: formattedUsdcBalance,
-        proposalCounter: proposalCounter.toString(),
-      });
-
       return {
         address: vaultAddress,
         name,
@@ -344,6 +336,54 @@ class BlockchainService {
     } catch (error) {
       console.error("Error voting:", error);
       throw new Error(`Failed to vote: ${error.message}`);
+    }
+  }
+
+  async depositUSDC(vaultAddress, amount) {
+    this.ensureInitialized();
+
+    try {
+      const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // USDC en Base Sepolia
+      const ERC20_ABI = [
+        "function transfer(address to, uint256 amount) returns (bool)",
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+      ];
+
+      const usdcContract = new ethers.Contract(
+        USDC_ADDRESS,
+        ERC20_ABI,
+        this.wallet
+      );
+
+      // USDC tiene 6 decimales
+      const decimals = await usdcContract.decimals();
+      const amountInUnits = ethers.parseUnits(amount, decimals);
+
+      // Verificar balance
+      const balance = await usdcContract.balanceOf(this.wallet.address);
+      if (balance < amountInUnits) {
+        throw new Error(
+          `Insufficient USDC balance. Have: ${ethers.formatUnits(
+            balance,
+            decimals
+          )}, Need: ${amount}`
+        );
+      }
+
+      // Transferir USDC al vault
+      const tx = await usdcContract.transfer(vaultAddress, amountInUnits);
+      const receipt = await tx.wait();
+
+      return {
+        success: true,
+        txHash: receipt.hash,
+        amount,
+        token: "USDC",
+      };
+    } catch (error) {
+      console.error("Error depositing USDC:", error);
+      throw new Error(`Failed to deposit USDC: ${error.message}`);
     }
   }
 

@@ -2,6 +2,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const config = require("../config/config");
 require("dotenv").config();
 
+const { ethers } = require("ethers");
 const { CdpClient } = require("@coinbase/cdp-sdk");
 const { getOrCreateUser, checkWalletAddressesExist } = require("../utils");
 const blockchainService = require("./blockchain.service");
@@ -28,11 +29,11 @@ exports.initBot = () => {
       name: `${userId}`,
     });
 
-    await cdp.evm.requestFaucet({
-      address: userWallet.address,
-      network: "base-sepolia",
-      token: "eth",
-    });
+    // await cdp.evm.requestFaucet({
+    //   address: userWallet.address,
+    //   network: "base-sepolia",
+    //   token: "eth",
+    // });
     // const faucetResponse2 = await cdp.evm.requestFaucet({
     //   address: userWallet.address,
     //   network: "base-sepolia",
@@ -117,6 +118,7 @@ exports.initBot = () => {
 /app - Open the MultiVault app
 /createvault - Create a new community wallet
 /myvaults - View your community wallets
+/withdraw - Withdraw USDC from your wallet
 /ownwallet - View your personal wallet
 /help - Show this help message
 /start - Return to the welcome screen`;
@@ -226,6 +228,45 @@ To create a new community wallet, reply with the following format:
       );
     }
   });
+  // Retirar USDC (de wallet personal o a vault comunitario)
+  bot.onText(/\/withdraw/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    try {
+      const userWallet = await cdp.evm.getOrCreateAccount({
+        name: `${userId}`,
+      });
+
+      const instructionsMessage = `💸 *Withdraw USDC*
+
+You can withdraw USDC from your personal wallet to any address (including community wallets).
+
+Reply with the format:
+\`recipient_address|amount\`
+
+*Examples:*
+\`0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb|10\`
+(Send 10 USDC to an address)
+
+*Your wallet:* \`${userWallet.address}\`
+
+💡 *Tip:* Use /myvaults to see your community wallet addresses!`;
+
+      bot.sendMessage(chatId, instructionsMessage, {
+        parse_mode: "Markdown",
+        reply_markup: {
+          force_reply: true,
+        },
+      });
+    } catch (error) {
+      console.error("Error in /withdraw:", error);
+      bot.sendMessage(
+        chatId,
+        "❌ Error preparing withdrawal. Please try again."
+      );
+    }
+  });
 
   bot.onText(/\/ownwallet/, async (msg) => {
     const chatId = msg.chat.id;
@@ -300,6 +341,108 @@ To create a new community wallet, reply with the following format:
     const text = msg.text;
 
     if (text && text.startsWith("/")) return;
+
+    // Check if this is a reply to the withdraw command
+    if (
+      msg.reply_to_message &&
+      msg.reply_to_message.text &&
+      msg.reply_to_message.text.includes("Withdraw USDC")
+    ) {
+      try {
+        const userId = msg.from.id;
+        const userWallet = await cdp.evm.getOrCreateAccount({
+          name: `${userId}`,
+        });
+
+        // Parse the format: recipient_address|amount
+        const parts = text.split("|");
+        if (parts.length !== 2) {
+          bot.sendMessage(
+            chatId,
+            "❌ Invalid format. Please use: `recipient_address|amount`\nExample: `0x742...|10`",
+            { parse_mode: "Markdown" }
+          );
+          return;
+        }
+
+        const recipientAddress = parts[0].trim();
+        const amount = parts[1].trim();
+
+        // Validate recipient address
+        if (
+          !recipientAddress.startsWith("0x") ||
+          recipientAddress.length !== 42
+        ) {
+          bot.sendMessage(
+            chatId,
+            "❌ Invalid recipient address. Must start with 0x and be 42 characters long."
+          );
+          return;
+        }
+
+        if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+          bot.sendMessage(chatId, "❌ Invalid amount. Must be greater than 0.");
+          return;
+        }
+
+        bot.sendMessage(
+          chatId,
+          `⏳ Processing withdrawal of ${amount} USDC to ${recipientAddress}...\n\nThis may take a moment.`
+        );
+
+        // Transferir usando CDP SDK desde el wallet del usuario
+        try {
+          const usdcAddress = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // USDC en Base Sepolia
+          const decimals = 6;
+
+          // Parsear cantidad con 6 decimales
+          const usdcAmount = ethers.parseUnits(amount, decimals);
+
+          // Crear interface ERC20 y encodear función transfer
+          const erc20Interface = new ethers.Interface([
+            "function transfer(address to, uint256 value)",
+          ]);
+
+          const data = erc20Interface.encodeFunctionData("transfer", [
+            recipientAddress,
+            usdcAmount,
+          ]);
+
+          // Enviar transacción usando CDP SDK
+          const tx = await cdp.evm.sendTransaction({
+            address: userWallet.address,
+            network: "base-sepolia",
+            transaction: {
+              to: usdcAddress,
+              data,
+              value: 0n, // EIP-1559 requires bigint, not string
+            },
+          });
+
+          const successMessage = `✅ *Withdrawal Successful!*
+
+*Amount:* ${amount} USDC
+*To:* \`${recipientAddress}\`
+*Transaction:* \`${tx.transactionHash}\`
+
+🎉 Your withdrawal has been completed!
+
+💡 Use /ownwallet to check your balance`;
+
+          bot.sendMessage(chatId, successMessage, { parse_mode: "Markdown" });
+        } catch (transferError) {
+          console.error("Transfer error:", transferError);
+          throw transferError;
+        }
+      } catch (error) {
+        console.error("Error processing withdrawal:", error);
+        bot.sendMessage(
+          chatId,
+          `❌ Error processing withdrawal: ${error.message}\n\nPlease make sure you have enough USDC balance.`
+        );
+      }
+      return;
+    }
 
     // Check if this is a reply to the createvault command
     if (
