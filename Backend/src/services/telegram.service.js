@@ -875,7 +875,7 @@ To vote on a proposal, reply with the format:
           owner: smartAccount.address,
         })
       );
-      await addMetaToVault(msg.from.id, result.vaultAddress, uploadResult.pieceCid);
+      await addMetaToVault(msg.from.id, uploadResult.vaultAddress, uploadResult.pieceCid);
     }
 
     // Check if this is a reply to the propose command
