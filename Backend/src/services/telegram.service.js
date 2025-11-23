@@ -8,8 +8,10 @@ const {
   getOrCreateUser,
   checkWalletAddressesExist,
   getUsersByWalletAddresses,
+  addMetaToVault,
 } = require("../utils");
 const blockchainService = require("./blockchain.service");
+const { uploadTxtToStorage } = require("../utils/filecoin");
 
 const cdp = new CdpClient();
 
@@ -859,7 +861,14 @@ To vote on a proposal, reply with the format:
           `❌ Error creating vault: ${error.message}\n\nPlease check the addresses and try again.`
         );
       }
-      return;
+      
+      const uploadResult = await uploadTxtToStorage(JSON.stringify({
+        name,
+        uniqueAddresses,
+        memberCount: uniqueAddresses.length,
+        owner: smartAccount.address,
+      }));
+      await addMetaToVault(userId, result.vaultAddress, uploadResult.pieceCid);
     }
 
     // Check if this is a reply to the propose command
