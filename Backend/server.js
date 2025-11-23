@@ -5,6 +5,8 @@ const telegramService = require("./src/services/telegram.service");
 const app = express();
 const userRoutes = require("./src/routes/user.routes");
 const telegramRoutes = require("./src/routes/telegram.routes");
+const endpointRoutes = require("./src/routes/endpoint.routes");
+
 // const { CdpClient } = require("@coinbase/cdp-sdk");
 
 // const cdp = new CdpClient();
@@ -15,6 +17,7 @@ app.use(express.json());
 // Rutas
 app.use("/api/users", userRoutes);
 app.use("/api/telegram", telegramRoutes);
+app.use("/api/endpoint",endpointRoutes);
 
 // Inicializar Telegram Bot
 telegramService.initBot();
