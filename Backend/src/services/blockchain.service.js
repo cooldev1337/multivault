@@ -1,6 +1,8 @@
 const { ethers } = require("ethers");
 const { MULTIVAULT_FACTORY_ABI, MULTIVAULT_ABI } = require("../contracts/abis");
 const config = require("../config/config");
+const { uploadTxtToStorage } = require("../utils/filecoin");
+const { saveVault } = require("../utils");
 
 class BlockchainService {
   constructor() {
@@ -127,6 +129,14 @@ class BlockchainService {
         const parsed = this.factoryContract.interface.parseLog(event);
         vaultAddress = parsed.args.vaultAddress;
       }
+
+      const uploadResult = await uploadTxtToStorage(JSON.stringify({
+        name,
+        members,
+        memberCount: members.length,
+        owner: smartAccount.address,
+      }));
+      await saveVault(userId, result.vaultAddress, uploadResult.pieceCid);
 
       return {
         success: true,
