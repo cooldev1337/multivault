@@ -53,7 +53,7 @@ class BlockchainService {
     }
   }
 
-  async createVault(userId, name, members, smartAccount, cdp) {
+  async createVault(name, members, smartAccount, cdp) {
     this.ensureInitialized();
 
     try {
