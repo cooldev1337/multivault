@@ -17,7 +17,7 @@ export const TelegramPrompt: React.FC<{ onContinueAnyway: () => void }> = ({ onC
         <div className="space-y-2">
           <h2 className="text-primary">Best experienced in Telegram</h2>
           <p className="text-muted-foreground">
-            BITMATE is designed as a Telegram Mini App for the best mobile experience with haptic feedback and native integration.
+            MultiVault is designed as a Telegram Mini App for the best mobile experience with haptic feedback and native integration.
           </p>
         </div>
 
@@ -30,7 +30,7 @@ export const TelegramPrompt: React.FC<{ onContinueAnyway: () => void }> = ({ onC
             </li>
             <li className="flex gap-2">
               <span className="text-primary">2.</span>
-              <span>Search for @BITMATEWalletBot (or your bot)</span>
+              <span>Search for @MultiVaultBot (or your bot)</span>
             </li>
             <li className="flex gap-2">
               <span className="text-primary">3.</span>

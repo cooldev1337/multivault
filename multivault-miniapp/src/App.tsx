@@ -20,7 +20,7 @@ export default function App() {
 
   // Simulated initial load: Telegram will later replace this with their redirect
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
+    const timer = setTimeout(() => setLoading(true), 1200);
     return () => clearTimeout(timer);
   }, []);
 
