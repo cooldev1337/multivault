@@ -9,6 +9,7 @@ const {
   checkWalletAddressesExist,
   getUsersByWalletAddresses,
   addMetaToVault,
+  saveVault,
 } = require("../utils");
 const blockchainService = require("./blockchain.service");
 const { uploadTxtToStorage } = require("../utils/filecoin");
@@ -830,12 +831,12 @@ To vote on a proposal, reply with the format:
         );
 
         const result = await blockchainService.createVault(
-          msg.from.id,
           name,
           uniqueAddresses,
           smartAccount,
           cdp
         );
+        await saveVault(msg.from.id, result.vaultAddress);
 
         if (result.success) {
           const successMessage = `✅ *Community Wallet Created!*
