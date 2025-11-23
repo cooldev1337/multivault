@@ -61,6 +61,20 @@ export const checkWalletAddressesExist = async (addresses) => {
   return results;
 };
 
+export const getUsersByWalletAddresses = async (addresses) => {
+  const normalizedAddresses = addresses.map((addr) => addr.toLowerCase());
+  const allUsers = await db.query.users.findMany();
+
+  // Filtrar usuarios cuyas addresses estén en la lista
+  const matchedUsers = allUsers.filter(
+    (u) =>
+      u.walletAddress &&
+      normalizedAddresses.includes(u.walletAddress.toLowerCase())
+  );
+
+  return matchedUsers;
+};
+
 /*
 export const encrypt = (theData) => {
   const cipherPassword = process.env.ENCRYPT_PASS;

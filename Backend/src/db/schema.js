@@ -14,6 +14,7 @@ export const users = sqliteTable(
     user: text().notNull(),
     metadataPieceCID: text(),
     tgLastLangCode: text(),
+    tgChatId: text(),
     walletAddress: text(),
     created: integer()
       .notNull()
