@@ -252,9 +252,9 @@ export const CreateWallet: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border">
-                        <SelectItem value="admin" className="text-foreground">Admin</SelectItem>
+                        {/*<SelectItem value="admin" className="text-foreground">Admin</SelectItem>
                         <SelectItem value="approver" className="text-foreground">Approver</SelectItem>
-                        <SelectItem value="contributor" className="text-foreground">Contributor</SelectItem>
+                        <SelectItem value="contributor" className="text-foreground">Contributor</SelectItem> */}
                       </SelectContent>
                     </Select>
                   </div>
@@ -297,7 +297,7 @@ export const CreateWallet: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/CreateProposalDialog')}
               className="flex-1 border-border text-foreground"
             >
               Cancel

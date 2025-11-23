@@ -18,7 +18,6 @@ export interface Proposal {
   rejections: string[]; // User IDs who rejected
   requiredApprovals: number;
 }
-
 type WalletContextType = {
   currentWallet: Wallet | null;
   setCurrentWallet: (wallet: Wallet) => void;

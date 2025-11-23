@@ -59,7 +59,7 @@ export function transformToCommunityWallets(
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { currentWallet, transactions, members, currentUser, approveTransaction, rejectTransaction, createTransaction, setCurrentUser } = useWallet();
+  const { currentWallet, transactions, members, currentUser, voteProposal, rejectTransaction, createTransaction, setCurrentUser } = useWallet();
   const { hapticFeedback, hapticNotification } = useTelegram();
   const [filter, setFilter] = useState<TransactionStatus | 'all'>('all');
 
@@ -137,7 +137,7 @@ export const Dashboard: React.FC = () => {
       food: '🍽️',
       entertainment: '🎉',
       utilities: '💡',
-      other: '📝',
+      other:  '📝',
     };
     return map[category] || '📝';
   };
@@ -339,7 +339,7 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </Badge>
                     </div>
-      </div>
+                  </div>
 
                   {tx.status === 'pending' && (
                     <div className="flex items-center justify-between pt-3 border-t border-border/50">

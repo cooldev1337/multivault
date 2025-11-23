@@ -37,7 +37,7 @@ export const Landing: React.FC = () => {
             onClick={() => navigate("/dashboard")}
             className="text-primary hover:text-primary/80"
           >
-            Dashboard
+            Join Wallet
           </Button>
         </div>
       </header>
@@ -141,7 +141,7 @@ export const Landing: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 px-4 py-6">
         <div className="max-w-6xl mx-auto text-center text-sm text-muted-foreground">
-          <p>Built with Coinbase CDP • Hackathon Demo</p>
+          <p>Built with Coinbase CDP • Hackathon ETHGLOBAL BUENOS AIRES 2O25</p>
         </div>
       </footer>
     </div>

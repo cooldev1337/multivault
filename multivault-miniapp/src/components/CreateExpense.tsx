@@ -44,7 +44,7 @@ export const CreateExpense: React.FC = () => {
 
     createTransaction(currentWallet.id, numAmount, category, description);
     toast.success('Expense recorded successfully');
-    navigate('/dashboard');
+    navigate('/Landing');
   };
 
   if (!currentWallet) {

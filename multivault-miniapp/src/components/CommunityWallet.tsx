@@ -115,6 +115,8 @@ export function CreateProposalDialog({ members, onCreateProposal }: CreatePropos
               </Select>
             </div>
 
+            
+                      
             <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
               <p className="text-sm text-primary">
                 <strong>Important:</strong> This proposal will require {Math.ceil(validMembers.length / 2)} approval votes to be automatically executed.
