@@ -733,6 +733,7 @@ To vote on a proposal, reply with the format:
     }
 
     // Check if this is a reply to the createvault command
+    let name;
     if (
       msg.reply_to_message &&
       msg.reply_to_message.text &&
@@ -761,7 +762,7 @@ To vote on a proposal, reply with the format:
           return;
         }
 
-        const name = parts[0].trim();
+        name = parts[0].trim();
         const creatorAddress = smartAccount.address.toLowerCase();
         let invitedAddresses = parts[1]
           .split(",")
