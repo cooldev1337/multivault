@@ -3,6 +3,7 @@ const config = require("../config/config");
 require("dotenv").config();
 
 const { CdpClient } = require("@coinbase/cdp-sdk");
+const { getOrCreateUser } = require("../utils");
 
 const cdp = new CdpClient();
 
@@ -25,6 +26,8 @@ exports.initBot = () => {
     const userWallet = await cdp.evm.getOrCreateAccount({
       name: `${userId}`,
     });
+
+    const user = await getOrCreateUser(userId, chatId, userWallet.address);
 
     const welcomeMessage = `👋 Hey ${firstName} \\!
     Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
