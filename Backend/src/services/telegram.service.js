@@ -31,32 +31,37 @@ exports.initBot = () => {
 
     const userId = msg.from.id;
 
-    // Crear owner EOA (solo para firmar)
-    const owner = await cdp.evm.getOrCreateAccount({
-      name: `${userId}-owner`,
-    });
-
-    // Crear Smart Account (gasless)
-    const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-      name: `${userId}`,
-      owner,
-    });
-
-    // Dar USDC gratis (no necesita ETH porque es gasless)
     try {
-      await cdp.evm.requestFaucet({
-        address: smartAccount.address,
-        network: "base-sepolia",
-        token: "usdc",
+      // Crear owner EOA (solo para firmar)
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
       });
-      // console.log(`USDC faucet sent to Smart Account ${smartAccount.address}`);
-    } catch (faucetError) {
-      console.error("Error requesting faucet:", faucetError);
-    }
 
-    const user = await getOrCreateUser(userId, chatId, smartAccount.address);
+      console.log(`Owner address for user ${userId}: ${owner.address}`);
 
-    const welcomeMessage = `👋 Hey ${firstName} \\!
+      // Crear Smart Account (gasless)
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+        name: `${userId}-v2`,
+        owner,
+      });
+
+      console.log(`Smart Account for user ${userId}: ${smartAccount.address}`);
+
+      // // Dar USDC gratis (no necesita ETH porque es gasless)
+      // try {
+      //   await cdp.evm.requestFaucet({
+      //     address: smartAccount.address,
+      //     network: "base-sepolia",
+      //     token: "usdc",
+      //   });
+      //   // console.log(`USDC faucet sent to Smart Account ${smartAccount.address}`);
+      // } catch (faucetError) {
+      //   console.error("Error requesting faucet:", faucetError);
+      // }
+
+      const user = await getOrCreateUser(userId, chatId, smartAccount.address);
+
+      const welcomeMessage = `👋 Hey ${firstName} \\!
     Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
 
     Your wallet address is \\(click to copy\\):
@@ -80,21 +85,28 @@ exports.initBot = () => {
 
     Ready to dive in\\? Tap the button below 👇`;
 
-    const opts = {
-      parse_mode: "MarkdownV2",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "🚀 Launch MultiVault",
-              web_app: { url: config.telegramMiniAppUrl },
-            },
+      const opts = {
+        parse_mode: "MarkdownV2",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🚀 Launch MultiVault",
+                web_app: { url: config.telegramMiniAppUrl },
+              },
+            ],
           ],
-        ],
-      },
-    };
+        },
+      };
 
-    bot.sendMessage(chatId, welcomeMessage, opts);
+      bot.sendMessage(chatId, welcomeMessage, opts);
+    } catch (error) {
+      console.error("Error in /start command:", error);
+      bot.sendMessage(
+        chatId,
+        `❌ Error initializing wallet: ${error.message}\n\nPlease contact support.`
+      );
+    }
   });
 
   bot.onText(/\/app/, async (msg) => {
@@ -107,7 +119,7 @@ exports.initBot = () => {
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -168,7 +180,7 @@ Tap the button below to launch the app:`;
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -214,7 +226,7 @@ To create a new community wallet, reply with the following format:
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -275,7 +287,7 @@ To create a new community wallet, reply with the following format:
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -319,7 +331,7 @@ Reply with the format:
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -391,7 +403,7 @@ Reply with the format:
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -435,7 +447,7 @@ To create a withdrawal proposal, reply with the format:
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -528,7 +540,7 @@ To create a withdrawal proposal, reply with the format:
         name: `${userId}-owner`,
       });
       const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}`,
+        name: `${userId}-v2`,
         owner,
       });
 
@@ -578,7 +590,7 @@ To vote on a proposal, reply with the format:
           name: `${userId}-owner`,
         });
         const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-          name: `${userId}`,
+          name: `${userId}-v2`,
           owner,
         });
 
@@ -681,9 +693,13 @@ To vote on a proposal, reply with the format:
       try {
         const userId = msg.from.id;
 
-        // Get creator's wallet
-        const userWallet = await cdp.evm.getOrCreateAccount({
-          name: `${userId}`,
+        // Get creator's Smart Account
+        const owner = await cdp.evm.getOrCreateAccount({
+          name: `${userId}-owner`,
+        });
+        const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+          name: `${userId}-v2`,
+          owner,
         });
 
         // Parse the format: name|address1,address2
@@ -819,7 +835,7 @@ To vote on a proposal, reply with the format:
           name: `${userId}-owner`,
         });
         const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-          name: `${userId}`,
+          name: `${userId}-v2`,
           owner,
         });
 
@@ -982,7 +998,7 @@ To vote on a proposal, reply with the format:
           name: `${userId}-owner`,
         });
         const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-          name: `${userId}`,
+          name: `${userId}-v2`,
           owner,
         });
 
@@ -1108,3 +1124,4 @@ exports.sendMessage = (chatId, text) => {
   }
   return bot.sendMessage(chatId, text);
 };
+

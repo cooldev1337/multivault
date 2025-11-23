@@ -82,11 +82,12 @@ class BlockchainService {
         ],
       });
 
-      console.log(`Vault creation UserOp sent: ${userOp.userOpHash}`);
+      console.log(`Vault creation UserOp sent:`, userOp);
 
       // Esperar a que se mine la transacción
       const receipt = await cdp.evm.waitForUserOperation({
         userOpHash: userOp.userOpHash,
+        smartAccountAddress: userOp.smartAccountAddress,
       });
 
       if (receipt.status !== "complete") {
@@ -301,7 +302,7 @@ class BlockchainService {
       );
 
       // Send as UserOperation (GASLESS)
-      const userOpHash = await cdp.evm.sendUserOperation({
+      const userOp = await cdp.evm.sendUserOperation({
         smartAccount,
         network: "base-sepolia",
         calls: [
@@ -313,10 +314,13 @@ class BlockchainService {
         ],
       });
 
-      console.log("UserOperation sent:", userOpHash);
+      console.log("UserOperation sent:", userOp);
 
       // Wait for the UserOperation to be included
-      const receipt = await cdp.evm.waitForUserOperation({ userOpHash });
+      const receipt = await cdp.evm.waitForUserOperation({
+        userOpHash: userOp.userOpHash,
+        smartAccountAddress: userOp.smartAccountAddress,
+      });
 
       console.log("UserOp receipt:", receipt);
 
@@ -346,7 +350,7 @@ class BlockchainService {
       return {
         success: true,
         proposalId,
-        userOpHash,
+        userOpHash: userOp.userOpHash,
         txHash: receipt.transactionHash,
       };
     } catch (error) {
@@ -411,7 +415,7 @@ class BlockchainService {
       ]);
 
       // Send as UserOperation (GASLESS)
-      const userOpHash = await cdp.evm.sendUserOperation({
+      const userOp = await cdp.evm.sendUserOperation({
         smartAccount,
         network: "base-sepolia",
         calls: [
@@ -423,16 +427,19 @@ class BlockchainService {
         ],
       });
 
-      console.log("Vote UserOperation sent:", userOpHash);
+      console.log("Vote UserOperation sent:", userOp);
 
       // Wait for the UserOperation to be included
-      const receipt = await cdp.evm.waitForUserOperation({ userOpHash });
+      const receipt = await cdp.evm.waitForUserOperation({
+        userOpHash: userOp.userOpHash,
+        smartAccountAddress: userOp.smartAccountAddress,
+      });
 
       console.log("Vote UserOp receipt:", receipt);
 
       return {
         success: true,
-        userOpHash,
+        userOpHash: userOp.userOpHash,
         txHash: receipt.transactionHash,
       };
     } catch (error) {
