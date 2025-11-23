@@ -1,15 +1,16 @@
 import { Synapse, RPC_URLS } from "@filoz/synapse-sdk";
 
-export async function uploadToStorage(data) {
+export async function uploadTxtToStorage(data) {
   try {
     const synapse = await Synapse.create({
       privateKey: process.env.FileCoinKey,
       rpcURL: RPC_URLS.calibration.http,
-    })
+    });
 
-    const data2 = new TextEncoder().encode(data);
+    const encodedDAta = new TextEncoder().encode(data);
     // const { pieceCid, size } 
-    const uploadResult = await synapse.storage.upload(data2)
+    console.log("before synapse upload", encodedDAta)
+    const uploadResult = await synapse.storage.upload(encodedDAta)
     console.log(`PieceCID: ${uploadResult.pieceCid}`);
     console.log(`Size: ${uploadResult.size} bytes`);
 
@@ -17,5 +18,19 @@ export async function uploadToStorage(data) {
   } catch (error) {
     return console.error("uploadToStorage error:", error);
   }
+}
 
+export async function downloadFromStorage(pieceCid) {
+  try {
+    const synapse = await Synapse.create({
+      privateKey: process.env.FileCoinKey,
+      rpcURL: RPC_URLS.calibration.http,
+    });
+
+    const bytes = await synapse.storage.download(pieceCid)
+    const decodedText = new TextDecoder().decode(bytes);
+    return decodedText
+  } catch (error) {
+    return error;
+  }
 }
