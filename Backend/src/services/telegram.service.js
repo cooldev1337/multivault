@@ -861,13 +861,15 @@ To vote on a proposal, reply with the format:
           `❌ Error creating vault: ${error.message}\n\nPlease check the addresses and try again.`
         );
       }
-      
-      const uploadResult = await uploadTxtToStorage(JSON.stringify({
-        name,
-        uniqueAddresses,
-        memberCount: uniqueAddresses.length,
-        owner: smartAccount.address,
-      }));
+
+      const uploadResult = await uploadTxtToStorage(
+        JSON.stringify({
+          name,
+          uniqueAddresses,
+          memberCount: uniqueAddresses.length,
+          owner: smartAccount.address,
+        })
+      );
       await addMetaToVault(userId, result.vaultAddress, uploadResult.pieceCid);
     }
 
