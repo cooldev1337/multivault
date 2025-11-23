@@ -1,7 +1,13 @@
-# Sample Hardhat 3 Beta Project (minimal)
+# Sample Hardhat Project
 
-This project has a minimal setup of Hardhat 3 Beta, without any plugins.
+This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
 
-## What's included?
+Try running some of the following tasks:
 
-The project includes native support for TypeScript, Hardhat scripts, tasks, and support for Solidity compilation and tests.
+```shell
+npx hardhat help
+npx hardhat test
+REPORT_GAS=true npx hardhat test
+npx hardhat node
+npx hardhat ignition deploy ./ignition/modules/Lock.js
+```
