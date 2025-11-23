@@ -42,10 +42,22 @@ const cdp = new CdpClient();
 // };
 
 exports.getorCreateWallet = async (id) => {
-  const wallet = await cdp.evm.getOrCreateAccount({
-    name: `${id}`,
+  // Create owner EOA
+  const owner = await cdp.evm.getOrCreateAccount({
+    name: `${id}-owner`,
   });
-  return wallet;
+
+  // Create Smart Account (gasless)
+  const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+    name: `${id}`,
+    owner,
+  });
+
+  return {
+    address: smartAccount.address,
+    accountType: "smart-account",
+    gasless: true,
+  };
 };
 
 exports.listTokenBalances = async (userWallet) => {

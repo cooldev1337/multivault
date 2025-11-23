@@ -52,29 +52,68 @@ class BlockchainService {
     }
   }
 
-  async createVault(name, members) {
+  async createVault(name, members, smartAccount, cdp) {
     this.ensureInitialized();
 
     try {
       console.log(`Creating vault "${name}" with ${members.length} members...`);
 
-      // Asegurar que el wallet que firma esté en la lista de miembros
-      const signerAddress = this.wallet.address.toLowerCase();
+      // Normalizar addresses
       const normalizedMembers = members.map((m) => m.toLowerCase());
 
-      if (!normalizedMembers.includes(signerAddress)) {
-        normalizedMembers.push(signerAddress);
-        console.log(`Added signer address ${signerAddress} to members list`);
+      // Crear la transacción
+      const factoryInterface = new ethers.Interface(MULTIVAULT_FACTORY_ABI);
+      const data = factoryInterface.encodeFunctionData("createVault", [
+        name,
+        normalizedMembers,
+      ]);
+
+      // GASLESS: El usuario firma con su Smart Account
+      const userOp = await cdp.evm.sendUserOperation({
+        smartAccount,
+        network: "base-sepolia",
+        calls: [
+          {
+            to: config.factoryAddress,
+            data,
+            value: 0n,
+          },
+        ],
+      });
+
+      console.log(`Vault creation UserOp sent: ${userOp.userOpHash}`);
+
+      // Esperar a que se mine la transacción
+      const receipt = await cdp.evm.waitForUserOperation({
+        userOpHash: userOp.userOpHash,
+      });
+
+      if (receipt.status !== "complete") {
+        throw new Error("UserOperation failed");
       }
 
-      const tx = await this.factoryContract.createVault(
-        name,
-        normalizedMembers
+      console.log(`Vault creation completed: ${receipt.transactionHash}`);
+
+      // Esperar un poco más para obtener el receipt
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Obtener el receipt de la transacción
+      const txReceipt = await this.provider.getTransactionReceipt(
+        receipt.transactionHash
       );
-      const receipt = await tx.wait();
+
+      if (!txReceipt) {
+        console.log("Receipt not found yet, vault created but address unknown");
+        return {
+          success: true,
+          vaultAddress: null,
+          userOpHash: userOp.userOpHash,
+          txHash: receipt.transactionHash,
+        };
+      }
 
       // Buscar el evento VaultCreated
-      const event = receipt.logs.find((log) => {
+      const event = txReceipt.logs.find((log) => {
         try {
           const parsed = this.factoryContract.interface.parseLog(log);
           return parsed.name === "VaultCreated";
@@ -92,8 +131,9 @@ class BlockchainService {
       return {
         success: true,
         vaultAddress,
-        txHash: receipt.hash,
-        blockNumber: receipt.blockNumber,
+        userOpHash: userOp.userOpHash,
+        txHash: receipt.transactionHash,
+        blockNumber: txReceipt.blockNumber,
       };
     } catch (error) {
       console.error("Error creating vault:", error);
@@ -232,7 +272,14 @@ class BlockchainService {
     }
   }
 
-  async proposeWithdrawal(vaultAddress, description, recipient, amount) {
+  async proposeWithdrawal(
+    vaultAddress,
+    description,
+    recipient,
+    amount,
+    smartAccount,
+    cdp
+  ) {
     this.ensureInitialized();
 
     try {
@@ -243,15 +290,42 @@ class BlockchainService {
       );
 
       const amountWei = ethers.parseEther(amount);
-      const tx = await vaultContract.proposeWithdrawal(
-        description,
-        recipient,
-        amountWei
+
+      // Encode the proposeWithdrawal call
+      const data = vaultContract.interface.encodeFunctionData(
+        "proposeWithdrawal",
+        [description, recipient, amountWei]
       );
-      const receipt = await tx.wait();
+
+      // Send as UserOperation (GASLESS)
+      const userOpHash = await cdp.evm.sendUserOperation({
+        smartAccount,
+        network: "base-sepolia",
+        calls: [
+          {
+            to: vaultAddress,
+            data: data,
+            value: "0",
+          },
+        ],
+      });
+
+      console.log("UserOperation sent:", userOpHash);
+
+      // Wait for the UserOperation to be included
+      const receipt = await cdp.evm.waitForUserOperation({ userOpHash });
+
+      console.log("UserOp receipt:", receipt);
+
+      // Wait a bit for the transaction to be fully processed
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Get the actual transaction receipt to parse events
+      const provider = new ethers.JsonRpcProvider("https://sepolia.base.org");
+      const txReceipt = await provider.getReceipt(receipt.transactionHash);
 
       // Buscar el evento ProposalCreated
-      const event = receipt.logs.find((log) => {
+      const event = txReceipt.logs.find((log) => {
         try {
           const parsed = vaultContract.interface.parseLog(log);
           return parsed.name === "ProposalCreated";
@@ -269,7 +343,8 @@ class BlockchainService {
       return {
         success: true,
         proposalId,
-        txHash: receipt.hash,
+        userOpHash,
+        txHash: receipt.transactionHash,
       };
     } catch (error) {
       console.error("Error proposing withdrawal:", error);
@@ -316,7 +391,7 @@ class BlockchainService {
     }
   }
 
-  async vote(vaultAddress, proposalId, inFavor) {
+  async vote(vaultAddress, proposalId, inFavor, smartAccount, cdp) {
     this.ensureInitialized();
 
     try {
@@ -326,12 +401,36 @@ class BlockchainService {
         this.wallet
       );
 
-      const tx = await vaultContract.vote(proposalId, inFavor);
-      const receipt = await tx.wait();
+      // Encode the vote call
+      const data = vaultContract.interface.encodeFunctionData("vote", [
+        proposalId,
+        inFavor,
+      ]);
+
+      // Send as UserOperation (GASLESS)
+      const userOpHash = await cdp.evm.sendUserOperation({
+        smartAccount,
+        network: "base-sepolia",
+        calls: [
+          {
+            to: vaultAddress,
+            data: data,
+            value: "0",
+          },
+        ],
+      });
+
+      console.log("Vote UserOperation sent:", userOpHash);
+
+      // Wait for the UserOperation to be included
+      const receipt = await cdp.evm.waitForUserOperation({ userOpHash });
+
+      console.log("Vote UserOp receipt:", receipt);
 
       return {
         success: true,
-        txHash: receipt.hash,
+        userOpHash,
+        txHash: receipt.transactionHash,
       };
     } catch (error) {
       console.error("Error voting:", error);

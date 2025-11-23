@@ -29,31 +29,36 @@ exports.initBot = () => {
 
     const userId = msg.from.id;
 
-    const userWallet = await cdp.evm.getOrCreateAccount({
-      name: `${userId}`,
+    // Crear owner EOA (solo para firmar)
+    const owner = await cdp.evm.getOrCreateAccount({
+      name: `${userId}-owner`,
     });
 
-    // await cdp.evm.requestFaucet({
-    //   address: userWallet.address,
-    //   network: "base-sepolia",
-    //   token: "eth",
-    // });
-    // const faucetResponse2 = await cdp.evm.requestFaucet({
-    //   address: userWallet.address,
-    //   network: "base-sepolia",
-    //   token: "usdc",
-    // });
-    // console.log(
-    //   `Requested funds from ETH faucet: https://sepolia.basescan.org/tx/${faucetResponse2.transactionHash}`
-    // );
+    // Crear Smart Account (gasless)
+    const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+      name: `${userId}`,
+      owner,
+    });
 
-    const user = await getOrCreateUser(userId, chatId, userWallet.address);
+    // Dar USDC gratis (no necesita ETH porque es gasless)
+    try {
+      await cdp.evm.requestFaucet({
+        address: smartAccount.address,
+        network: "base-sepolia",
+        token: "usdc",
+      });
+      // console.log(`USDC faucet sent to Smart Account ${smartAccount.address}`);
+    } catch (faucetError) {
+      console.error("Error requesting faucet:", faucetError);
+    }
+
+    const user = await getOrCreateUser(userId, chatId, smartAccount.address);
 
     const welcomeMessage = `👋 Hey ${firstName} \\!
     Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
 
     Your wallet address is \\(click to copy\\):
-    \`${userWallet.address}\` 
+    \`${smartAccount.address}\` 
 
     💰 *What is MultiVault?*
     It helps families, friends, neighbors or teams pool money **without trusting a single person**\\.  
@@ -95,13 +100,17 @@ exports.initBot = () => {
     const userId = msg.from.id;
 
     try {
-      // Crear o recuperar wallet del usuario
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      // Crear owner y Smart Account
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       // Asegurar que el usuario exista en la base de datos
-      await getOrCreateUser(userId, chatId, userWallet.address);
+      await getOrCreateUser(userId, chatId, smartAccount.address);
 
       const appMessage = `🚀 *Opening MultiVault...*
 
@@ -153,8 +162,12 @@ Tap the button below to launch the app:`;
     const userId = msg.from.id;
 
     try {
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       const instructionsMessage = `🏦 *Create Community Wallet*
@@ -172,7 +185,7 @@ To create a new community wallet, reply with the following format:
 • Separate addresses with commas (no spaces)
 • All addresses must be registered users in the app
 
-💡 *Note:* Your address (${userWallet.address}) will be included automatically!`;
+💡 *Note:* Your address (${smartAccount.address}) will be included automatically!`;
 
       bot.sendMessage(chatId, instructionsMessage, {
         parse_mode: "Markdown",
@@ -195,12 +208,16 @@ To create a new community wallet, reply with the following format:
     const userId = msg.from.id;
 
     try {
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       const vaultAddresses = await blockchainService.getUserVaults(
-        userWallet.address
+        smartAccount.address
       );
 
       if (vaultAddresses.length === 0) {
@@ -252,8 +269,12 @@ To create a new community wallet, reply with the following format:
     const userId = msg.from.id;
 
     try {
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       const instructionsMessage = `💸 *Withdraw USDC*
@@ -267,7 +288,7 @@ Reply with the format:
 \`0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb|10\`
 (Send 10 USDC to an address)
 
-*Your wallet:* \`${userWallet.address}\`
+*Your wallet:* \`${smartAccount.address}\`
 
 💡 *Tip:* Use /myvaults to see your community wallet addresses!`;
 
@@ -291,9 +312,13 @@ Reply with the format:
     const userId = msg.from.id;
 
     try {
-      // Crear o recuperar wallet
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      // Crear owner y Smart Account
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       // USDC nativo en CDP siempre usa este pseudo-address
@@ -301,7 +326,7 @@ Reply with the format:
 
       // Obtener balances
       const result = await cdp.evm.listTokenBalances({
-        address: userWallet.address,
+        address: smartAccount.address,
         network: "base-sepolia",
       });
 
@@ -331,8 +356,8 @@ Reply with the format:
       // }
 
       // Construcción del mensaje final
-      let walletMessage = `💰 *Your Wallet*\n\n`;
-      walletMessage += `📍 Address: \`${userWallet.address}\`\n\n`;
+      let walletMessage = `💰 *Your Smart Wallet* (Gasless)\n\n`;
+      walletMessage += `📍 Address: \`${smartAccount.address}\`\n\n`;
       walletMessage += `💵 Balance: *${balanceInUsdc.toFixed(6)} USDC*\n\n`;
 
       // Sin transacciones por ahora (comentaste código)
@@ -360,8 +385,12 @@ Reply with the format:
     const userId = msg.from.id;
 
     try {
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       const instructionsMessage = `📝 *Create Withdrawal Proposal*
@@ -390,10 +419,7 @@ To create a withdrawal proposal, reply with the format:
       });
     } catch (error) {
       console.error("Error in /propose:", error);
-      bot.sendMessage(
-        chatId,
-        "❌ Error preparing proposal. Please try again."
-      );
+      bot.sendMessage(chatId, "❌ Error preparing proposal. Please try again.");
     }
   });
 
@@ -403,12 +429,16 @@ To create a withdrawal proposal, reply with the format:
     const userId = msg.from.id;
 
     try {
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       const vaultAddresses = await blockchainService.getUserVaults(
-        userWallet.address
+        smartAccount.address
       );
 
       if (vaultAddresses.length === 0) {
@@ -492,8 +522,12 @@ To create a withdrawal proposal, reply with the format:
     const userId = msg.from.id;
 
     try {
-      const userWallet = await cdp.evm.getOrCreateAccount({
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
         name: `${userId}`,
+        owner,
       });
 
       const instructionsMessage = `🗳️ *Vote on Proposal*
@@ -538,8 +572,12 @@ To vote on a proposal, reply with the format:
     ) {
       try {
         const userId = msg.from.id;
-        const userWallet = await cdp.evm.getOrCreateAccount({
+        const owner = await cdp.evm.getOrCreateAccount({
+          name: `${userId}-owner`,
+        });
+        const smartAccount = await cdp.evm.getOrCreateSmartAccount({
           name: `${userId}`,
+          owner,
         });
 
         // Parse the format: recipient_address|amount
@@ -575,18 +613,15 @@ To vote on a proposal, reply with the format:
 
         bot.sendMessage(
           chatId,
-          `⏳ Processing withdrawal of ${amount} USDC to ${recipientAddress}...\n\nThis may take a moment.`
+          `⏳ Processing withdrawal of ${amount} USDC to ${recipientAddress}...\n\n✨ GASLESS - No gas fees!`
         );
 
-        // Transferir usando CDP SDK desde el wallet del usuario
+        // Transferir usando Smart Account (GASLESS)
         try {
-          const usdcAddress = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // USDC en Base Sepolia
+          const usdcAddress = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
           const decimals = 6;
-
-          // Parsear cantidad con 6 decimales
           const usdcAmount = ethers.parseUnits(amount, decimals);
 
-          // Crear interface ERC20 y encodear función transfer
           const erc20Interface = new ethers.Interface([
             "function transfer(address to, uint256 value)",
           ]);
@@ -596,22 +631,25 @@ To vote on a proposal, reply with the format:
             usdcAmount,
           ]);
 
-          // Enviar transacción usando CDP SDK
-          const tx = await cdp.evm.sendTransaction({
-            address: userWallet.address,
+          // GASLESS: sendUserOperation con Smart Account
+          const userOp = await cdp.evm.sendUserOperation({
+            smartAccount,
             network: "base-sepolia",
-            transaction: {
-              to: usdcAddress,
-              data,
-              value: 0n, // EIP-1559 requires bigint, not string
-            },
+            calls: [
+              {
+                to: usdcAddress,
+                data,
+                value: 0n,
+              },
+            ],
           });
 
           const successMessage = `✅ *Withdrawal Successful!*
 
 *Amount:* ${amount} USDC
 *To:* \`${recipientAddress}\`
-*Transaction:* \`${tx.transactionHash}\`
+*UserOperation:* \`${userOp.userOpHash}\`
+✨ *Gas Fee:* FREE (Sponsored by Coinbase)
 
 🎉 Your withdrawal has been completed!
 
@@ -658,7 +696,7 @@ To vote on a proposal, reply with the format:
         }
 
         const name = parts[0].trim();
-        const creatorAddress = userWallet.address.toLowerCase();
+        const creatorAddress = smartAccount.address.toLowerCase();
         let invitedAddresses = parts[1]
           .split(",")
           .map((addr) => addr.trim().toLowerCase())
@@ -719,12 +757,14 @@ To vote on a proposal, reply with the format:
 
         bot.sendMessage(
           chatId,
-          "⏳ Creating your community wallet... This may take a moment."
+          "⏳ Creating your community wallet... This is GASLESS ✨"
         );
 
         const result = await blockchainService.createVault(
           name,
-          uniqueAddresses
+          uniqueAddresses,
+          smartAccount,
+          cdp
         );
 
         if (result.success) {
@@ -732,8 +772,10 @@ To vote on a proposal, reply with the format:
 
 *Name:* ${name}
 *Members:* ${uniqueAddresses.length}
-*Vault Address:* \`${result.vaultAddress}\`
+*Vault Address:* \`${result.vaultAddress || "Processing..."}\`
+*UserOperation:* \`${result.userOpHash}\`
 *Transaction:* \`${result.txHash}\`
+✨ *Gas Fee:* FREE (Sponsored by Coinbase)
 
 🎉 Your community wallet is ready! All members can now deposit funds and create proposals.
 
@@ -764,8 +806,12 @@ To vote on a proposal, reply with the format:
     ) {
       try {
         const userId = msg.from.id;
-        const userWallet = await cdp.evm.getOrCreateAccount({
+        const owner = await cdp.evm.getOrCreateAccount({
+          name: `${userId}-owner`,
+        });
+        const smartAccount = await cdp.evm.getOrCreateSmartAccount({
           name: `${userId}`,
+          owner,
         });
 
         // Parse: vault_address|recipient|amount|description
@@ -831,14 +877,16 @@ To vote on a proposal, reply with the format:
 
         bot.sendMessage(
           chatId,
-          `⏳ Creating proposal... This may take a moment.`
+          `⏳ Creating proposal GASLESS ✨... This may take a moment.`
         );
 
         const result = await blockchainService.proposeWithdrawal(
           vaultAddress,
           description,
           recipient,
-          amount
+          amount,
+          smartAccount,
+          cdp
         );
 
         if (result.success) {
@@ -855,7 +903,8 @@ To vote on a proposal, reply with the format:
 *Recipient:* \`${recipient}\`
 *Description:* ${description}
 
-*Proposed by:* \`${userWallet.address}\`
+*Proposed by:* \`${smartAccount.address}\`
+*Gas Fee:* FREE (Sponsored by Coinbase) ✨
 
 💡 Use /vote to cast your vote!`;
 
@@ -887,7 +936,9 @@ To vote on a proposal, reply with the format:
 *Proposal ID:* ${result.proposalId}
 *Amount:* ${amount} USDC
 *Recipient:* \`${recipient}\`
+*UserOp Hash:* \`${result.userOpHash}\`
 *Transaction:* \`${result.txHash}\`
+*Gas Fee:* FREE (Sponsored by Coinbase) ✨
 
 🔔 All vault members have been notified!
 
@@ -918,8 +969,12 @@ To vote on a proposal, reply with the format:
     ) {
       try {
         const userId = msg.from.id;
-        const userWallet = await cdp.evm.getOrCreateAccount({
+        const owner = await cdp.evm.getOrCreateAccount({
+          name: `${userId}-owner`,
+        });
+        const smartAccount = await cdp.evm.getOrCreateSmartAccount({
           name: `${userId}`,
+          owner,
         });
 
         // Parse: vault_address|proposal_id|yes/no
@@ -954,10 +1009,7 @@ To vote on a proposal, reply with the format:
 
         // Validar vote
         if (voteStr !== "yes" && voteStr !== "no") {
-          bot.sendMessage(
-            chatId,
-            "❌ Invalid vote. Must be 'yes' or 'no'."
-          );
+          bot.sendMessage(chatId, "❌ Invalid vote. Must be 'yes' or 'no'.");
           return;
         }
 
@@ -967,7 +1019,7 @@ To vote on a proposal, reply with the format:
         const hasVoted = await blockchainService.hasVoted(
           vaultAddress,
           parseInt(proposalId),
-          userWallet.address
+          smartAccount.address
         );
 
         if (hasVoted) {
@@ -978,12 +1030,17 @@ To vote on a proposal, reply with the format:
           return;
         }
 
-        bot.sendMessage(chatId, `⏳ Submitting your vote... Please wait.`);
+        bot.sendMessage(
+          chatId,
+          `⏳ Submitting your vote GASLESS ✨... Please wait.`
+        );
 
         const result = await blockchainService.vote(
           vaultAddress,
           parseInt(proposalId),
-          inFavor
+          inFavor,
+          smartAccount,
+          cdp
         );
 
         if (result.success) {
@@ -1004,13 +1061,18 @@ ${voteEmoji} You voted *${inFavor ? "YES" : "NO"}*
 👎 Votes Against: ${proposal.votesAgainst}
 *Status:* ${proposal.status}
 
+*UserOp Hash:* \`${result.userOpHash}\`
 *Transaction:* \`${result.txHash}\`
+*Gas Fee:* FREE (Sponsored by Coinbase) ✨
 
 💡 Use /proposals to see all proposals`;
 
           bot.sendMessage(chatId, successMessage, { parse_mode: "Markdown" });
         } else {
-          bot.sendMessage(chatId, "❌ Failed to submit vote. Please try again.");
+          bot.sendMessage(
+            chatId,
+            "❌ Failed to submit vote. Please try again."
+          );
         }
       } catch (error) {
         console.error("Error voting:", error);

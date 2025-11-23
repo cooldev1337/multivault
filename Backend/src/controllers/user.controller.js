@@ -28,17 +28,24 @@ exports.initializeWallet = async (req, res) => {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    // Crear o recuperar wallet usando CDP
-    const userWallet = await cdp.evm.getOrCreateAccount({
-      name: `${userId}`,
+    // Crear o recuperar Smart Account usando CDP
+    const owner = await cdp.evm.getOrCreateAccount({
+      name: `${userId}-owner`,
     });
 
-    // Registrar usuario en la base de datos
-    const user = await getOrCreateUser(userId, chatId, userWallet.address);
+    const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+      name: `${userId}`,
+      owner,
+    });
+
+    // Registrar usuario en la base de datos con la Smart Account address
+    const user = await getOrCreateUser(userId, chatId, smartAccount.address);
 
     res.json({
       success: true,
-      walletAddress: userWallet.address,
+      walletAddress: smartAccount.address,
+      accountType: "smart-account",
+      gasless: true,
       user,
     });
   } catch (error) {
