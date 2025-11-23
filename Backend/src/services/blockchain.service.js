@@ -130,7 +130,7 @@ class BlockchainService {
         vaultAddress = parsed.args.vaultAddress;
       }
 
-      await saveVault(userId, result.vaultAddress);
+      await saveVault(userId, vaultAddress);
 
       return {
         success: true,
