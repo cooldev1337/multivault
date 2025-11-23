@@ -28,6 +28,20 @@ exports.initBot = () => {
       name: `${userId}`,
     });
 
+    await cdp.evm.requestFaucet({
+      address: userWallet.address,
+      network: "base-sepolia",
+      token: "eth",
+    });
+    // const faucetResponse2 = await cdp.evm.requestFaucet({
+    //   address: userWallet.address,
+    //   network: "base-sepolia",
+    //   token: "usdc",
+    // });
+    // console.log(
+    //   `Requested funds from ETH faucet: https://sepolia.basescan.org/tx/${faucetResponse2.transactionHash}`
+    // );
+
     const user = await getOrCreateUser(userId, chatId, userWallet.address);
 
     const welcomeMessage = `👋 Hey ${firstName} \\!
@@ -186,7 +200,7 @@ To create a new community wallet, reply with the following format:
             vaultAddresses[i]
           );
           message += `${i + 1}. *${vaultInfo.name}*\n`;
-          message += `   💰 Balance: ${vaultInfo.balance} ETH\n`;
+          message += `   💰 Balance: ${vaultInfo.balance} USDC\n`;
           message += `   👥 Members: ${vaultInfo.memberCount}\n`;
           message += `   📝 Proposals: ${vaultInfo.proposalCounter}\n`;
           message += `   📍 Address: \`${vaultInfo.address}\`\n\n`;
@@ -313,9 +327,11 @@ To create a new community wallet, reply with the following format:
         }
 
         const name = parts[0].trim();
+        const creatorAddress = userWallet.address.toLowerCase();
         let invitedAddresses = parts[1]
           .split(",")
-          .map((addr) => addr.trim().toLowerCase());
+          .map((addr) => addr.trim().toLowerCase())
+          .filter((addr) => addr !== creatorAddress); // Remove creator's address if included
 
         if (!name) {
           bot.sendMessage(chatId, "❌ Vault name cannot be empty.");
@@ -325,7 +341,7 @@ To create a new community wallet, reply with the following format:
         if (invitedAddresses.length < 1) {
           bot.sendMessage(
             chatId,
-            "❌ You need at least 1 other member address."
+            "❌ You need at least 1 other member address (don't include your own)."
           );
           return;
         }
@@ -364,13 +380,10 @@ To create a new community wallet, reply with the following format:
           return;
         }
 
-        // Add creator's address to the list
-        const allAddresses = [
-          ...invitedAddresses,
-          userWallet.address.toLowerCase(),
-        ];
+        // Add creator's address to the list (already filtered out if user included it)
+        const allAddresses = [...invitedAddresses, creatorAddress];
 
-        // Remove duplicates
+        // uniqueAddresses will have creator + invited members
         const uniqueAddresses = [...new Set(allAddresses)];
 
         bot.sendMessage(

@@ -52,21 +52,25 @@ class BlockchainService {
     }
   }
 
-  // ==================== Factory Methods ====================
-
-  /**
-   * Crea una nueva vault en el contrato Factory
-   * @param {string} name - Nombre de la vault
-   * @param {string[]} members - Array de direcciones de miembros
-   * @returns {Promise<{vaultAddress: string, txHash: string}>}
-   */
   async createVault(name, members) {
     this.ensureInitialized();
 
     try {
       console.log(`Creating vault "${name}" with ${members.length} members...`);
 
-      const tx = await this.factoryContract.createVault(name, members);
+      // Asegurar que el wallet que firma esté en la lista de miembros
+      const signerAddress = this.wallet.address.toLowerCase();
+      const normalizedMembers = members.map((m) => m.toLowerCase());
+
+      if (!normalizedMembers.includes(signerAddress)) {
+        normalizedMembers.push(signerAddress);
+        console.log(`Added signer address ${signerAddress} to members list`);
+      }
+
+      const tx = await this.factoryContract.createVault(
+        name,
+        normalizedMembers
+      );
       const receipt = await tx.wait();
 
       // Buscar el evento VaultCreated
@@ -97,11 +101,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Obtiene todas las vaults de un usuario
-   * @param {string} userAddress - Dirección del usuario
-   * @returns {Promise<string[]>}
-   */
   async getUserVaults(userAddress) {
     this.ensureInitialized();
 
@@ -114,10 +113,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Obtiene todas las vaults creadas
-   * @returns {Promise<string[]>}
-   */
   async getAllVaults() {
     this.ensureInitialized();
 
@@ -130,10 +125,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Obtiene el total de vaults creadas
-   * @returns {Promise<number>}
-   */
   async getTotalVaults() {
     this.ensureInitialized();
 
@@ -146,11 +137,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Verifica si una dirección es una vault válida
-   * @param {string} vaultAddress - Dirección de la vault
-   * @returns {Promise<boolean>}
-   */
   async isValidVault(vaultAddress) {
     this.ensureInitialized();
 
@@ -162,13 +148,6 @@ class BlockchainService {
     }
   }
 
-  // ==================== Vault Methods ====================
-
-  /**
-   * Obtiene información de una vault específica
-   * @param {string} vaultAddress - Dirección de la vault
-   * @returns {Promise<object>}
-   */
   async getVaultInfo(vaultAddress) {
     this.ensureInitialized();
 
@@ -182,12 +161,42 @@ class BlockchainService {
       const [name, members, balance, proposalCounter] =
         await vaultContract.getVaultInfo();
 
+      // Obtener balance de USDC
+      const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // USDC en Base Sepolia
+      const ERC20_ABI = [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+      ];
+
+      const usdcContract = new ethers.Contract(
+        USDC_ADDRESS,
+        ERC20_ABI,
+        this.provider
+      );
+
+      const [usdcBalance, decimals] = await Promise.all([
+        usdcContract.balanceOf(vaultAddress),
+        usdcContract.decimals(),
+      ]);
+
+      const formattedUsdcBalance = ethers.formatUnits(usdcBalance, decimals);
+
+      console.log("Vault Info:", {
+        name,
+        members,
+        ethBalance: balance.toString(),
+        usdcBalance: formattedUsdcBalance,
+        proposalCounter: proposalCounter.toString(),
+      });
+
       return {
         address: vaultAddress,
         name,
         members,
-        balance: ethers.formatEther(balance),
-        balanceWei: balance.toString(),
+        balance: formattedUsdcBalance, // Balance de USDC
+        balanceWei: usdcBalance.toString(),
+        ethBalance: ethers.formatEther(balance), // Balance de ETH nativo por si acaso
+        ethBalanceWei: balance.toString(),
         proposalCounter: Number(proposalCounter),
         memberCount: members.length,
       };
@@ -197,12 +206,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Obtiene información de una propuesta
-   * @param {string} vaultAddress - Dirección de la vault
-   * @param {number} proposalId - ID de la propuesta
-   * @returns {Promise<object>}
-   */
   async getProposalInfo(vaultAddress, proposalId) {
     this.ensureInitialized();
 
@@ -237,14 +240,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Crea una propuesta de retiro
-   * @param {string} vaultAddress - Dirección de la vault
-   * @param {string} description - Descripción de la propuesta
-   * @param {string} recipient - Dirección del destinatario
-   * @param {string} amount - Cantidad en ETH
-   * @returns {Promise<{proposalId: number, txHash: string}>}
-   */
   async proposeWithdrawal(vaultAddress, description, recipient, amount) {
     this.ensureInitialized();
 
@@ -290,13 +285,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Crea una propuesta para agregar un miembro
-   * @param {string} vaultAddress - Dirección de la vault
-   * @param {string} description - Descripción de la propuesta
-   * @param {string} newMember - Dirección del nuevo miembro
-   * @returns {Promise<{proposalId: number, txHash: string}>}
-   */
   async proposeAddMember(vaultAddress, description, newMember) {
     this.ensureInitialized();
 
@@ -336,13 +324,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Vota en una propuesta
-   * @param {string} vaultAddress - Dirección de la vault
-   * @param {number} proposalId - ID de la propuesta
-   * @param {boolean} inFavor - true para votar a favor, false en contra
-   * @returns {Promise<{txHash: string}>}
-   */
   async vote(vaultAddress, proposalId, inFavor) {
     this.ensureInitialized();
 
@@ -366,12 +347,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Deposita ETH en una vault
-   * @param {string} vaultAddress - Dirección de la vault
-   * @param {string} amount - Cantidad en ETH
-   * @returns {Promise<{txHash: string}>}
-   */
   async deposit(vaultAddress, amount) {
     this.ensureInitialized();
 
@@ -397,13 +372,6 @@ class BlockchainService {
     }
   }
 
-  /**
-   * Verifica si un usuario ha votado en una propuesta
-   * @param {string} vaultAddress - Dirección de la vault
-   * @param {number} proposalId - ID de la propuesta
-   * @param {string} voterAddress - Dirección del votante
-   * @returns {Promise<boolean>}
-   */
   async hasVoted(vaultAddress, proposalId, voterAddress) {
     this.ensureInitialized();
 

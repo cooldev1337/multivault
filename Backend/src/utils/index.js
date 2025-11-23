@@ -35,15 +35,22 @@ export const getOrCreateUser = async (userId, chatId, walletAddress) => {
 };
 
 export const getUserByWalletAddress = async (walletAddress) => {
-  return await db.query.users.findFirst({
-    where: (user, { eq }) => eq(user.walletAddress, walletAddress),
-  });
+  const normalizedAddress = walletAddress.toLowerCase();
+  const allUsers = await db.query.users.findMany();
+
+  // Buscar comparando en lowercase ya que las addresses pueden estar en diferentes formatos
+  const user = allUsers.find(
+    (u) =>
+      u.walletAddress && u.walletAddress.toLowerCase() === normalizedAddress
+  );
+
+  return user || null;
 };
 
 export const checkWalletAddressesExist = async (addresses) => {
   const results = await Promise.all(
     addresses.map(async (address) => {
-      const user = await getUserByWalletAddress(address.toLowerCase());
+      const user = await getUserByWalletAddress(address);
       return {
         address,
         exists: !!user,
