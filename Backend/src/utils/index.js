@@ -75,7 +75,21 @@ export const getUsersByWalletAddresses = async (addresses) => {
   return matchedUsers;
 };
 
-export const saveVault = async (userId, contractAddress, metadataPieceCID) => {
+export const saveVault = async (userId, contractAddress) => {
+  const value = {
+    user: userId.toString(),
+    contractAddress,
+  };
+
+  return await db
+    .insert(communityWallets)
+    .values(value)
+    .onConflictDoNothing()
+    .returning()
+    .execute();
+};
+
+export const addMetaToVault = async (userId, contractAddress, metadataPieceCID) => {
   const value = {
     user: userId.toString(),
     contractAddress,
@@ -85,9 +99,10 @@ export const saveVault = async (userId, contractAddress, metadataPieceCID) => {
   return await db
     .insert(communityWallets)
     .values(value)
-    .onConflictDoNothing()
-    .returning()
-    .execute();
+    .onConflictDoUpdate({
+      target: [schema.users.user, schema.users.contractAddress],
+      set: { metadataPieceCID }
+    })
 };
 
 /*
