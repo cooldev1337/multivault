@@ -734,6 +734,8 @@ To vote on a proposal, reply with the format:
 
     // Check if this is a reply to the createvault command
     let name;
+    let uniqueAddresses;
+    let smartAccount;
     if (
       msg.reply_to_message &&
       msg.reply_to_message.text &&
@@ -746,7 +748,7 @@ To vote on a proposal, reply with the format:
         const owner = await cdp.evm.getOrCreateAccount({
           name: `${userId}-owner`,
         });
-        const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+        smartAccount = await cdp.evm.getOrCreateSmartAccount({
           name: `${userId}-v2`,
           owner,
         });
@@ -820,7 +822,7 @@ To vote on a proposal, reply with the format:
         const allAddresses = [...invitedAddresses, creatorAddress];
 
         // uniqueAddresses will have creator + invited members
-        const uniqueAddresses = [...new Set(allAddresses)];
+        uniqueAddresses = [...new Set(allAddresses)];
 
         bot.sendMessage(
           chatId,

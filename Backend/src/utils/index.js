@@ -103,6 +103,7 @@ export const addMetaToVault = async (userId, contractAddress, metadataPieceCID) 
       target: [schema.users.user, schema.users.contractAddress],
       set: { metadataPieceCID }
     })
+    .execute();
 };
 
 /*
