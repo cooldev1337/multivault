@@ -14,7 +14,7 @@ export const createUser = async (userId, chatId, walletAddress) => {
     walletAddress: walletAddress,
   };
 
-  return await db.insert(users).values(value).onConflictDoNothing().execute().returning();
+  return await db.insert(users).values(value).onConflictDoNothing().returning().execute();
 }
 
 export const getOrCreateUser = async (userId, chatId, walletAddress) => {
