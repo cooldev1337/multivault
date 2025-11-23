@@ -1,392 +1,264 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
-import { useTelegram } from '../contexts/TelegramContext';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { CreateProposalDialog } from './CreateProposalDialog';
 import { toast } from 'sonner';
-import { 
-  Wallet as WalletIcon, 
-  ArrowLeft, 
-  Plus, 
-  TrendingUp, 
-  Users, 
-  History,
-  Check,
-  X,
-  Clock,
-  LogOut
-} from 'lucide-react';
-import type { TransactionStatus, CommunityWallet, Wallet, Member, Transaction } from '../types';
+import { Wallet as WalletIcon, Users, History, Check, X, Clock, LogOut, Plus } from 'lucide-react';
 
-// Export CommunityWallet type for use in other components
-export type { CommunityWallet };
-
-// Helper function to transform Wallet data to CommunityWallet format
-export function transformToCommunityWallets(
-  wallets: Wallet[],
-  members: Member[],
-  transactions: Transaction[]
-): CommunityWallet[] {
-  return wallets.map(wallet => {
-    const walletMembers = members.filter(m => m.walletId === wallet.id);
-    const walletTransactions = transactions.filter(tx => tx.walletId === wallet.id);
-    const pendingTransactions = walletTransactions.filter(tx => tx.status === 'pending');
-
-    return {
-      id: wallet.id,
-      name: wallet.name,
-      description: `Created on ${wallet.creationDate.toLocaleDateString()}`,
-      balance: wallet.balance,
-      members: walletMembers
-        .filter(m => m.user)
-        .map(m => ({
-          address: m.user!.wallet,
-          name: m.user!.name,
-          avatar: undefined, // extended later with actual avatars
-        })),
-      proposals: pendingTransactions.map(tx => ({
-        id: tx.id,
-        status: 'active' as const,
-      })),
-      transactions: walletTransactions,
-    };
-  });
-}
-
+// Dashboard: English, demo-driven, includes proposals, voting and confirm-withdrawal flow.
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { currentWallet, transactions, members, currentUser, voteProposal, rejectTransaction, createTransaction, setCurrentUser } = useWallet();
-  const { hapticFeedback, hapticNotification } = useTelegram();
-  const [filter, setFilter] = useState<TransactionStatus | 'all'>('all');
+  const { currentUser, setCurrentUser } = useWallet();
+  const userAddress = currentUser?.wallet ?? '0xDEMO';
 
-  if (!currentWallet) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <Card className="p-8 max-w-md w-full text-center space-y-4">
-          <WalletIcon className="w-12 h-12 text-primary mx-auto" />
-          <h2 className="text-primary">No Wallet Selected</h2>
-          <p className="text-muted-foreground">Create or join a wallet to get started</p>
-          <div className="flex flex-col gap-2">
-            <Button onClick={() => navigate('/create-wallet')} className="w-full">
-              Create Shared Wallet
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/')} className="w-full">
-              Back to Home
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  // Demo community wallets data
+  const [wallets, setWallets] = useState(() => [
+    {
+      id: '1',
+      name: 'Family Savings',
+      description: 'Savings for grandparents medical expenses',
+      balance: 1250.5,
+      members: [
+        { id: 'm1', address: '0x123', name: 'Maria Garcia' },
+        { id: 'm2', address: '0x456', name: 'Juan Garcia' },
+        { id: 'm3', address: '0x789', name: 'Ana Garcia' },
+      ],
+      proposals: [
+        {
+          id: 'p1',
+          title: 'Buy monthly medicines',
+          description: 'Purchase monthly medications',
+          amount: '150.00',
+          recipient: '0x123',
+          proposedBy: '0x456',
+          votesFor: ['0x456'],
+          votesAgainst: [],
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          requiredVotes: 2,
+        },
+      ],
+      transactions: [
+        { id: 't1', type: 'deposit', amount: '250.00', from: '0x123', description: 'Monthly contribution', timestamp: new Date().toISOString() },
+      ],
+    },
+  ] as any[]);
 
-  const walletTransactions = transactions
-    .filter(tx => tx.walletId === currentWallet.id)
-    .filter(tx => filter === 'all' || tx.status === filter)
-    .sort((a, b) => b.creationDate.getTime() - a.creationDate.getTime());
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(wallets[0]?.id ?? null);
 
-  const walletMembers = members.filter(m => m.walletId === currentWallet.id);
-  
-  const pendingCount = transactions.filter(
-    tx => tx.walletId === currentWallet.id && tx.status === 'pending'
-  ).length;
-
-  const totalSpent = transactions
-    .filter(tx => tx.walletId === currentWallet.id && tx.status === 'executed')
-    .reduce((sum, tx) => sum + tx.amount, 0);
-
-  const getStatusIcon = (status: TransactionStatus) => {
-    switch (status) {
-      case 'executed':
-      case 'approved':
-        return <Check className="w-4 h-4" />;
-      case 'rejected':
-        return <X className="w-4 h-4" />;
-      case 'pending':
-        return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getStatusColor = (status: TransactionStatus) => {
-    switch (status) {
-      case 'executed':
-      case 'approved':
-        return 'bg-secondary text-secondary-foreground';
-      case 'rejected':
-        return 'bg-destructive text-destructive-foreground';
-      case 'pending':
-        return 'bg-primary/20 text-primary';
-    }
-  };
-
-  const canApprove = (tx: typeof walletTransactions[0]) => {
-    if (!currentUser) return false;
-    if (tx.createdBy === currentUser.id) return false;
-    if (tx.approvals.includes(currentUser.id)) return false;
-    if (tx.status !== 'pending') return false;
-    return true;
-  };
-
-  const getCategoryEmoji = (category: string) => {
-    const map: Record<string, string> = {
-      transportation: '🚗',
-      lodging: '🏠',
-      food: '🍽️',
-      entertainment: '🎉',
-      utilities: '💡',
-      other:  '📝',
-    };
-    return map[category] || '📝';
-  };
-
-  const handleCreateProposal = (title: string, description: string, amount: string, recipient: string) => {
-    if (!currentWallet) {
-      toast.error('No wallet selected');
-      return;
-    }
-
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    // Title, description, and recipient info into the transaction description
-    const fullDescription = description 
-      ? `${title}\n\n${description}\n\nRecipient: ${recipient.slice(0, 10)}...`
-      : `${title}\n\nRecipient: ${recipient.slice(0, 10)}...`;
-
-    createTransaction(currentWallet.id, numAmount, 'other', fullDescription);
-    toast.success('Proposal created successfully');
-    hapticNotification('success');
-  };
+  const selectedWallet = wallets.find(w => w.id === selectedWalletId) || wallets[0];
 
   const handleLogout = () => {
-    setCurrentUser(null);
+    setCurrentUser?.(null as any);
     navigate('/');
   };
 
-  const userAddress = currentUser?.wallet;
+  const createProposal = (title: string, description: string, amount: string, recipient: string) => {
+    if (!selectedWallet) return;
+    const proposal = {
+      id: Date.now().toString(),
+      title,
+      description,
+      amount,
+      recipient,
+      proposedBy: userAddress,
+      votesFor: [userAddress],
+      votesAgainst: [],
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      requiredVotes: Math.max(1, Math.ceil(selectedWallet.members.length / 2)),
+    };
+    setWallets(ws => ws.map(w => w.id === selectedWallet.id ? { ...w, proposals: [proposal, ...w.proposals], transactions: [{ id: Date.now().toString(), type: 'proposal', amount, from: userAddress, description: title, timestamp: new Date().toISOString() }, ...w.transactions] } : w));
+    toast.success('Proposal created (demo)');
+  };
+
+  const voteOnProposal = (walletId: string, proposalId: string, vote: 'for' | 'against') => {
+    setWallets(ws => ws.map(w => {
+      if (w.id !== walletId) return w;
+      return { ...w, proposals: w.proposals.map((p: any) => {
+        if (p.id !== proposalId) return p;
+        const votesFor = vote === 'for' ? Array.from(new Set([...p.votesFor, userAddress])) : p.votesFor;
+        const votesAgainst = vote === 'against' ? Array.from(new Set([...p.votesAgainst, userAddress])) : p.votesAgainst;
+        const status = votesFor.length >= p.requiredVotes ? 'approved' : p.status;
+        return { ...p, votesFor, votesAgainst, status };
+      }) };
+    }));
+    toast.success('Vote recorded (demo)');
+  };
+
+  const confirmWithdrawal = (walletId: string, proposalId: string) => {
+    setWallets(ws => ws.map(w => {
+      if (w.id !== walletId) return w;
+      const proposals = w.proposals.map((p: any) => {
+        if (p.id !== proposalId) return p;
+        if (p.status !== 'approved') return p;
+        // execute withdrawal: subtract balance and add transaction
+        const newBalance = (parseFloat(w.balance as any) - parseFloat(p.amount)).toFixed(2);
+        w = { ...w, balance: parseFloat(newBalance) } as any;
+        w.transactions = [{ id: Date.now().toString(), type: 'withdrawal', amount: p.amount, from: 'Community', to: p.recipient, description: p.title, timestamp: new Date().toISOString() }, ...w.transactions];
+        return { ...p, status: 'executed' };
+      });
+      return { ...w, proposals, transactions: w.transactions };
+    }));
+    toast.success('Withdrawal executed (demo)');
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card/60 backdrop-blur-xl border-b border-border/20 sticky top-0 z-10 shadow-lg shadow-primary/5">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/50">
-                <WalletIcon className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <span className="text-xl bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent font-bold">
-                  MULTIVAULT
-                </span>
-                <p className="text-xs text-muted-foreground">Collaborative Web3 Wallet</p>
-              </div>
+      <header className="bg-card/60 backdrop-blur-xl border-b border-border/20 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/80 rounded-2xl flex items-center justify-center">
+              <WalletIcon className="w-6 h-6 text-black" />
             </div>
+            <div>
+              <div className="text-xl font-bold text-primary">MULTIVAULT</div>
+              <div className="text-xs text-muted-foreground">Collaborative Web3 Wallet</div>
+            </div>
+          </div>
 
-            <div className="flex items-center gap-4">
-              {userAddress && (
-                <div className="hidden md:flex items-center gap-3 px-5 py-3 bg-card/80 backdrop-blur-sm rounded-2xl border border-primary/20 shadow-lg">
-                  <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                  <span className="text-sm text-primary font-mono">
-                    {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
-                  </span>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2 hover:bg-card/60 rounded-xl text-foreground"
-              >
-                <LogOut className="w-4 h-4" />
-                Log out
-              </Button>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-card/80 rounded-lg border border-primary/20">
+              <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
+              <div className="font-mono text-sm text-primary">{String(userAddress).slice(0, 6)}...{String(userAddress).slice(-4)}</div>
             </div>
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-foreground">
+              <LogOut className="w-4 h-4 mr-2" />Log out
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 bg-card/50 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Balance</p>
-              <WalletIcon className="w-5 h-5 text-primary" />
-            </div>
-            <p className="text-2xl text-primary">
-              {currentWallet.balance.toFixed(2)} {currentWallet.token}
-            </p>
-          </Card>
-          
-          <Card className="p-6 bg-card/50 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Total Spent</p>
-              <TrendingUp className="w-5 h-5 text-secondary" />
-            </div>
-            <p className="text-2xl text-primary">
-              {totalSpent.toFixed(2)} {currentWallet.token}
-            </p>
-          </Card>
-          
-          <Card className="p-6 bg-card/50 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Pending Approvals</p>
-              <Clock className="w-5 h-5 text-primary" />
-            </div>
-            <p className="text-2xl text-primary">{pendingCount}</p>
-          </Card>
-        </div>
-
-        {/* Members Section */}
-        <Card className="p-6 bg-card/50 border-border/50">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-primary" />
-            <h3 className="text-primary">Members</h3>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {walletMembers.map(member => (
-              <div key={member.id} className="flex items-center gap-2 bg-background/50 rounded-lg px-3 py-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary/20 text-primary">
-                    {member.user?.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <Card className="p-6 bg-card/50">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm text-primary">{member.user?.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                  <div className="text-sm text-muted-foreground">Personal Wallet</div>
+                  <div className="text-lg font-semibold text-primary">{String(userAddress)}</div>
                 </div>
+                <Button onClick={() => toast('Demo: add funds')} className="bg-primary text-black"><Plus className="w-4 h-4" /></Button>
               </div>
-            ))}
-          </div>
-        </Card>
 
-        {/* Transactions Section */}
-        <Card className="p-6 bg-card/50 border-border/50">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <History className="w-5 h-5 text-primary" />
-              <h3 className="text-primary">Transactions</h3>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant={filter === 'all' ? 'default' : 'ghost'}
-                onClick={() => setFilter('all')}
-                className={filter === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-              >
-                All
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === 'pending' ? 'default' : 'ghost'}
-                onClick={() => setFilter('pending')}
-                className={filter === 'pending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-              >
-                Pending
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === 'executed' ? 'default' : 'ghost'}
-                onClick={() => setFilter('executed')}
-                className={filter === 'executed' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}
-              >
-                Executed
-              </Button>
-            </div>
+              <div className="space-y-3">
+                <Button onClick={() => navigate('/create-wallet')} className="w-full">Create Shared Wallet</Button>
+                <Button variant="outline" onClick={() => navigate('/')} className="w-full">Back to Home</Button>
+              </div>
+            </Card>
           </div>
 
-          <div className="space-y-3">
-            {walletTransactions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No transactions yet</p>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-primary">Community Wallets</h2>
+                <p className="text-sm text-muted-foreground">Manage proposals, vote and confirm withdrawals</p>
               </div>
-            ) : (
-              walletTransactions.map(tx => (
-                <div 
-                  key={tx.id}
-                  className="bg-background/50 rounded-lg p-4 space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{getCategoryEmoji(tx.category)}</span>
-                        <h4 className="text-primary">{tx.description}</h4>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span className="capitalize">{tx.category}</span>
-                        <span>•</span>
-                        <span>by {tx.createdByUser?.name}</span>
-                        <span>•</span>
-                        <span>{tx.creationDate.toLocaleDateString()}</span>
+              <div>
+                <CreateProposalDialog members={(selectedWallet?.members || []).map((m: any) => ({ id: m.id, user: { name: m.name, wallet: m.address } }))} onCreateProposal={createProposal} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {wallets.map(w => (
+                <Card key={w.id} className={`p-4 ${selectedWallet?.id === w.id ? 'ring-2 ring-primary/40' : ''}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-sm text-muted-foreground">{w.description}</div>
+                      <div className="text-lg font-semibold text-primary">{w.name}</div>
+                      <div className="text-sm text-primary">{Number(w.balance).toFixed(2)} USD</div>
+                      <div className="flex items-center gap-2 mt-2">
+                        {(w.members || []).slice(0,5).map((m: any) => (
+                          <div key={m.address} className="w-8 h-8 rounded-full bg-background/40 flex items-center justify-center text-sm text-primary">{(m.name||'').split(' ').map((x:string)=>x[0]).join('')}</div>
+                        ))}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-primary">
-                        {tx.amount.toFixed(2)} {tx.token}
-                      </p>
-                      <Badge className={`mt-1 ${getStatusColor(tx.status)}`}>
-                        <span className="flex items-center gap-1">
-                          {getStatusIcon(tx.status)}
-                          <span className="capitalize">{tx.status}</span>
-                        </span>
-                      </Badge>
+                    <div className="flex flex-col gap-2">
+                      <Button size="sm" onClick={() => setSelectedWalletId(w.id)}>Open</Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {selectedWallet && (
+              <Card className="p-6 bg-card/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-muted-foreground">{selectedWallet.description}</div>
+                    <div className="text-2xl font-bold text-primary">{selectedWallet.name}</div>
+                    <div className="text-sm text-primary">Balance: {Number(selectedWallet.balance).toFixed(2)} USD</div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm text-muted-foreground mb-2">Proposals</h4>
+                    <div className="space-y-3">
+                      {selectedWallet.proposals.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">No proposals</div>
+                      ) : (
+                        selectedWallet.proposals.map((p: any) => (
+                          <div key={p.id} className="p-3 bg-background/50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-primary font-semibold">{p.title}</div>
+                                <div className="text-sm text-muted-foreground">{p.description}</div>
+                                <div className="text-sm text-muted-foreground">Amount: {p.amount} USD</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm text-muted-foreground">{p.votesFor.length} / {p.requiredVotes}</div>
+                                <div className="flex gap-2 mt-2">
+                                  {p.status === 'active' && (
+                                    <>
+                                      <Button size="sm" onClick={() => voteOnProposal(selectedWallet.id, p.id, 'for')} className="bg-secondary text-secondary-foreground">Vote For</Button>
+                                      <Button size="sm" variant="outline" onClick={() => voteOnProposal(selectedWallet.id, p.id, 'against')}>Vote Against</Button>
+                                    </>
+                                  )}
+                                  {p.status === 'approved' && <div className="flex gap-2"><Badge className="bg-secondary/20 text-secondary">Approved</Badge><Button size="sm" onClick={() => confirmWithdrawal(selectedWallet.id, p.id)}>Confirm Withdrawal</Button></div>}
+                                  {p.status === 'executed' && <Badge className="bg-secondary/20 text-secondary">Executed</Badge>}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
-                  {tx.status === 'pending' && (
-                    <div className="flex items-center justify-between pt-3 border-t border-border/50">
-                      <div className="text-sm text-muted-foreground">
-                        Approvals: {tx.approvals.length} / {tx.requiredApprovals}
-                      </div>
-                      {canApprove(tx) ? (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              hapticFeedback('light');
-                              rejectTransaction(tx.id);
-                              hapticNotification('warning');
-                            }}
-                            className="border-destructive text-destructive hover:bg-destructive/10"
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              hapticFeedback('medium');
-                              approveTransaction(tx.id);
-                              hapticNotification('success');
-                            }}
-                            className="bg-secondary text-secondary-foreground"
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Approve
-                          </Button>
-                        </div>
-                      ) : tx.approvals.includes(currentUser?.id || '') ? (
-                        <Badge className="bg-secondary/20 text-secondary">
-                          You approved
-                        </Badge>
-                      ) : null}
+                  <div>
+                    <h4 className="text-sm text-muted-foreground mb-2">Transactions</h4>
+                    <div className="space-y-3">
+                      {selectedWallet.transactions.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">No transactions</div>
+                      ) : (
+                        selectedWallet.transactions.map((tx: any) => (
+                          <div key={tx.id} className="p-3 bg-background/50 rounded-lg flex items-center justify-between">
+                            <div>
+                              <div className="text-primary">{tx.description}</div>
+                              <div className="text-sm text-muted-foreground">{new Date(tx.timestamp).toLocaleString()}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-primary">{Number(tx.amount).toFixed(2)} USD</div>
+                              <div className="text-sm text-muted-foreground">{tx.type}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              ))
+              </Card>
             )}
           </div>
-        </Card>
+        </div>
       </main>
     </div>
   );
 };
+
+export default Dashboard;

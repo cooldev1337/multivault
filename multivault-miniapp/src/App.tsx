@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Landing } from "./components/Landing";
-import { Dashboard } from "./components/Dashboard";
 import { TelegramOnboarding } from "./components/TelegramOnboarding";
+import Dashboard from "./components/Dashboard";
 import OnboardingSkeleton from "./components/OnboardingSkeleton";
 import { Toaster } from "./components/ui/sonner";
 import { WalletProvider } from "./contexts/WalletContext";
