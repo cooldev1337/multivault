@@ -49,7 +49,7 @@ exports.getorCreateWallet = async (id) => {
 
   // Create Smart Account (gasless)
   const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-    name: `${id}`,
+    name: `${id}-v2`,
     owner,
   });
 
@@ -59,7 +59,6 @@ exports.getorCreateWallet = async (id) => {
     gasless: true,
   };
 };
-
 exports.listTokenBalances = async (userWallet) => {
   const result = await cdp.evm.listTokenBalances({
     address: userWallet.address,

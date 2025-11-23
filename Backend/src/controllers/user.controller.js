@@ -34,11 +34,9 @@ exports.initializeWallet = async (req, res) => {
     });
 
     const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-      name: `${userId}`,
+      name: `${userId}-v2`,
       owner,
-    });
-
-    // Registrar usuario en la base de datos con la Smart Account address
+    }); // Registrar usuario en la base de datos con la Smart Account address
     const user = await getOrCreateUser(userId, chatId, smartAccount.address);
 
     res.json({
