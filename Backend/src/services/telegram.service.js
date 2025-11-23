@@ -29,37 +29,32 @@ exports.initBot = () => {
 
     const userId = msg.from.id;
 
-    try {
-      // Crear owner EOA (solo para firmar)
-      const owner = await cdp.evm.getOrCreateAccount({
-        name: `${userId}-owner`,
-      });
+    // Crear owner EOA (solo para firmar)
+    const owner = await cdp.evm.getOrCreateAccount({
+      name: `${userId}-owner`,
+    });
 
-      console.log(`Owner address for user ${userId}: ${owner.address}`);
+    // Crear Smart Account (gasless)
+    const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+      name: `${userId}-v2`,
+      owner,
+    });
 
-      // Crear Smart Account (gasless)
-      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
-        name: `${userId}-v2`,
-        owner,
-      });
+    // // Dar USDC gratis (no necesita ETH porque es gasless)
+    // try {
+    //   await cdp.evm.requestFaucet({
+    //     address: smartAccount.address,
+    //     network: "base-sepolia",
+    //     token: "usdc",
+    //   });
+    //   // console.log(`USDC faucet sent to Smart Account ${smartAccount.address}`);
+    // } catch (faucetError) {
+    //   console.error("Error requesting faucet:", faucetError);
+    // }
 
-      console.log(`Smart Account for user ${userId}: ${smartAccount.address}`);
+    const user = await getOrCreateUser(userId, chatId, smartAccount.address);
 
-      // // Dar USDC gratis (no necesita ETH porque es gasless)
-      // try {
-      //   await cdp.evm.requestFaucet({
-      //     address: smartAccount.address,
-      //     network: "base-sepolia",
-      //     token: "usdc",
-      //   });
-      //   // console.log(`USDC faucet sent to Smart Account ${smartAccount.address}`);
-      // } catch (faucetError) {
-      //   console.error("Error requesting faucet:", faucetError);
-      // }
-
-      const user = await getOrCreateUser(userId, chatId, smartAccount.address);
-
-      const welcomeMessage = `👋 Hey ${firstName} \\!
+    const welcomeMessage = `👋 Hey ${firstName} \\!
     Welcome to *MultiVault* — the transparent and democratic way to manage money with your group\\.
 
     Your wallet address is \\(click to copy\\):
@@ -83,28 +78,21 @@ exports.initBot = () => {
 
     Ready to dive in\\? Tap the button below 👇`;
 
-      const opts = {
-        parse_mode: "MarkdownV2",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🚀 Launch MultiVault",
-                web_app: { url: config.telegramMiniAppUrl },
-              },
-            ],
+    const opts = {
+      parse_mode: "MarkdownV2",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "🚀 Launch MultiVault",
+              web_app: { url: config.telegramMiniAppUrl },
+            },
           ],
-        },
-      };
+        ],
+      },
+    };
 
-      bot.sendMessage(chatId, welcomeMessage, opts);
-    } catch (error) {
-      console.error("Error in /start command:", error);
-      bot.sendMessage(
-        chatId,
-        `❌ Error initializing wallet: ${error.message}\n\nPlease contact support.`
-      );
-    }
+    bot.sendMessage(chatId, welcomeMessage, opts);
   });
 
   bot.onText(/\/app/, async (msg) => {
@@ -157,6 +145,7 @@ Tap the button below to launch the app:`;
 /app - Open the MultiVault app
 /createvault - Create a new community wallet
 /myvaults - View your community wallets
+/buyusdc - Get free USDC (testnet faucet)
 /withdraw - Withdraw USDC from your wallet
 /ownwallet - View your personal wallet
 /propose - Create a withdrawal proposal
@@ -166,6 +155,65 @@ Tap the button below to launch the app:`;
 /start - Return to the welcome screen`;
 
     bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+  });
+
+  // Comprar USDC (faucet)
+  bot.onText(/\/buyusdc/, async (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+
+    console.log(`/buyusdc command received from user ${userId}`);
+
+    try {
+      const owner = await cdp.evm.getOrCreateAccount({
+        name: `${userId}-owner`,
+      });
+      const smartAccount = await cdp.evm.getOrCreateSmartAccount({
+        name: `${userId}-v2`,
+        owner,
+      });
+
+      console.log(`Smart Account for buyusdc: ${smartAccount.address}`);
+
+      bot.sendMessage(
+        chatId,
+        `💰 *Getting USDC for you...*\n\nPlease wait a moment...`,
+        { parse_mode: "Markdown" }
+      );
+
+      // Solicitar USDC del faucet
+      await cdp.evm.requestFaucet({
+        address: smartAccount.address,
+        network: "base-sepolia",
+        token: "usdc",
+      });
+
+      const successMessage = `✅ *USDC Received!*
+
+You have successfully received testnet USDC!
+
+💵 *Amount:* ~10 USDC (testnet)
+📍 *Your Wallet:* \`${smartAccount.address}\`
+
+🎉 Your USDC is ready to use!
+
+💡 Use /ownwallet to check your balance
+💡 Use /withdraw to send USDC to a vault`;
+
+      bot.sendMessage(chatId, successMessage, { parse_mode: "Markdown" });
+    } catch (error) {
+      console.error("Error in /buyusdc:", error);
+
+      let errorMsg = "❌ Error getting USDC. ";
+      if (error.message?.includes("Faucet limit reached")) {
+        errorMsg +=
+          "You've reached the faucet limit. Please try again later (24h cooldown).";
+      } else {
+        errorMsg += "Please try again later.";
+      }
+
+      bot.sendMessage(chatId, errorMsg);
+    }
   });
 
   // Crear Community Vault
@@ -1115,4 +1163,3 @@ exports.sendMessage = (chatId, text) => {
   }
   return bot.sendMessage(chatId, text);
 };
-
