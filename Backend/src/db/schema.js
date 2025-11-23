@@ -26,3 +26,15 @@ export const users = sqliteTable(
     userIdx: uniqueIndex("users_user_idx").on(table.user),
   })
 );
+
+export const communityWallets = sqliteTable("communityWallets", {
+  id: integer().primaryKey({ autoIncrement: true }),
+  user: text(),
+  contractAddress: text(),
+  metadataPieceCID: text(),
+  created: integer().notNull().default(sql`(UNIXEPOCH() * 1000)`),
+  updated: integer().$onUpdate(() => sql`(UNIXEPOCH() * 1000)`),
+  deleted: integer(),
+}, (table) => ({
+  userAccAddrIdx: uniqueIndex("communityWallets_userConAddress_idx").on(table.user, table.contractAddress)
+}));

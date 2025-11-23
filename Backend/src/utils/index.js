@@ -1,5 +1,5 @@
 import db from "../db/index.js";
-import { users } from "../db/schema.js";
+import { users, communityWallets } from "../db/schema.js";
 
 export const getUser = async (userId) => {
   return await db.query.users.findFirst({
@@ -73,6 +73,21 @@ export const getUsersByWalletAddresses = async (addresses) => {
   );
 
   return matchedUsers;
+};
+
+export const saveVault = async (userId, contractAddress, metadataPieceCID) => {
+  const value = {
+    user: userId.toString(),
+    contractAddress,
+    metadataPieceCID,
+  };
+
+  return await db
+    .insert(communityWallets)
+    .values(value)
+    .onConflictDoNothing()
+    .returning()
+    .execute();
 };
 
 /*

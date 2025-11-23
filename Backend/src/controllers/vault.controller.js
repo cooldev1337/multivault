@@ -1,4 +1,6 @@
 const blockchainService = require("../services/blockchain.service");
+const { saveVault } = require("../utils");
+const { uploadTxtToStorage } = require("../utils/filecoin");
 
 /**
  * Crea una nueva community vault
@@ -24,6 +26,10 @@ exports.createVault = async (req, res) => {
     }
 
     const result = await blockchainService.createVault(name, members);
+    /*const uploadResult = await uploadTxtToStorage(JSON.stringify({
+
+    }));
+    await saveVault(userId, result.vaultAddress, uploadResult.pieceCid);*/
 
     res.json({
       success: true,
