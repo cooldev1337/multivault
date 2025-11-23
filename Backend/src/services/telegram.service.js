@@ -737,6 +737,7 @@ To vote on a proposal, reply with the format:
     let name;
     let uniqueAddresses;
     let smartAccount;
+    let vaultAddress;
     if (
       msg.reply_to_message &&
       msg.reply_to_message.text &&
@@ -837,6 +838,7 @@ To vote on a proposal, reply with the format:
           cdp
         );
         await saveVault(msg.from.id, result.vaultAddress);
+        vaultAddress = result.vaultAddress;
 
         if (result.success) {
           const successMessage = `✅ *Community Wallet Created!*
@@ -875,7 +877,7 @@ To vote on a proposal, reply with the format:
           owner: smartAccount.address,
         })
       );
-      await addMetaToVault(msg.from.id, uploadResult.vaultAddress, uploadResult.pieceCid);
+      await addMetaToVault(msg.from.id, vaultAddress, uploadResult.pieceCid);
     }
 
     // Check if this is a reply to the propose command
