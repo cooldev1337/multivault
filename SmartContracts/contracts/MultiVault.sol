@@ -55,29 +55,29 @@ contract MultiVault {
     event WithdrawalExecuted(address indexed recipient, uint256 amount);
 
     modifier onlyMember() {
-        require(isMember[msg.sender], "No eres miembro de este vault");
+        require(isMember[msg.sender], "Not a member of this vault");
         _;
     }
 
     modifier validProposal(uint256 _proposalId) {
         require(
             proposals[_proposalId].status == ProposalStatus.PENDING,
-            "Propuesta no esta pendiente"
+            "Proposal is not pending"
         );
         _;
     }
 
     constructor(string memory _name, address[] memory _members) {
-        require(_members.length >= 2, "Se requieren al menos 2 miembros");
-        require(bytes(_name).length > 0, "El nombre no puede estar vacio");
+        require(_members.length >= 2, "At least 2 members required");
+        require(bytes(_name).length > 0, "Name cannot be empty");
 
         name = _name;
         factory = msg.sender;
 
         // Agregar miembros iniciales
         for (uint256 i = 0; i < _members.length; i++) {
-            require(_members[i] != address(0), "Direccion invalida");
-            require(!isMember[_members[i]], "Miembro duplicado");
+            require(_members[i] != address(0), "Invalid address");
+            require(!isMember[_members[i]], "Duplicate member");
 
             members.push(_members[i]);
             isMember[_members[i]] = true;
@@ -85,7 +85,7 @@ contract MultiVault {
     }
 
     function deposit() external payable onlyMember {
-        require(msg.value > 0, "Debe depositar un monto mayor a 0");
+        require(msg.value > 0, "Must deposit more than 0");
         emit DepositMade(msg.sender, msg.value);
     }
 
@@ -94,16 +94,13 @@ contract MultiVault {
         address payable _recipient,
         uint256 _amount
     ) external onlyMember returns (uint256) {
-        require(_amount > 0, "El monto debe ser mayor a 0");
+        require(_amount > 0, "Amount must be greater than 0");
         require(
             _amount <= address(this).balance,
-            "Fondos insuficientes en el vault"
+            "Insufficient funds in vault"
         );
-        require(_recipient != address(0), "Direccion de destinatario invalida");
-        require(
-            bytes(_description).length > 0,
-            "La descripcion no puede estar vacia"
-        );
+        require(_recipient != address(0), "Invalid recipient address");
+        require(bytes(_description).length > 0, "Description cannot be empty");
 
         uint256 proposalId = proposalCounter++;
         Proposal storage newProposal = proposals[proposalId];
@@ -125,12 +122,9 @@ contract MultiVault {
         string memory _description,
         address _newMember
     ) external onlyMember returns (uint256) {
-        require(_newMember != address(0), "Direccion invalida");
-        require(!isMember[_newMember], "Ya es miembro del vault");
-        require(
-            bytes(_description).length > 0,
-            "La descripcion no puede estar vacia"
-        );
+        require(_newMember != address(0), "Invalid address");
+        require(!isMember[_newMember], "Already a member of the vault");
+        require(bytes(_description).length > 0, "Description cannot be empty");
 
         uint256 proposalId = proposalCounter++;
         Proposal storage newProposal = proposals[proposalId];
@@ -154,7 +148,7 @@ contract MultiVault {
         Proposal storage proposal = proposals[_proposalId];
         require(
             !proposal.hasVoted[msg.sender],
-            "Ya has votado en esta propuesta"
+            "Already voted on this proposal"
         );
 
         proposal.hasVoted[msg.sender] = true;
@@ -203,10 +197,7 @@ contract MultiVault {
     function _executeWithdrawal(uint256 _proposalId) private {
         Proposal storage proposal = proposals[_proposalId];
 
-        require(
-            address(this).balance >= proposal.amount,
-            "Fondos insuficientes"
-        );
+        require(address(this).balance >= proposal.amount, "Insufficient funds");
 
         proposal.recipient.transfer(proposal.amount);
 

@@ -3,9 +3,9 @@ import { users } from "../db/schema.js";
 
 export const getUser = async (userId) => {
   return await db.query.users.findFirst({
-    where: (user, { eq }) => (eq(user.user, userId)),
+    where: (user, { eq }) => eq(user.user, userId),
   });
-}
+};
 
 export const createUser = async (userId, chatId, walletAddress) => {
   const value = {
@@ -14,12 +14,17 @@ export const createUser = async (userId, chatId, walletAddress) => {
     walletAddress: walletAddress,
   };
 
-  return await db.insert(users).values(value).onConflictDoNothing().returning().execute();
-}
+  return await db
+    .insert(users)
+    .values(value)
+    .onConflictDoNothing()
+    .returning()
+    .execute();
+};
 
 export const getOrCreateUser = async (userId, chatId, walletAddress) => {
   const user = await db.query.users.findFirst({
-    where: (user, { eq }) => (eq(user.user, userId)),
+    where: (user, { eq }) => eq(user.user, userId),
   });
 
   if (!user) {
@@ -27,7 +32,27 @@ export const getOrCreateUser = async (userId, chatId, walletAddress) => {
   } else {
     return user;
   }
-}
+};
+
+export const getUserByWalletAddress = async (walletAddress) => {
+  return await db.query.users.findFirst({
+    where: (user, { eq }) => eq(user.walletAddress, walletAddress),
+  });
+};
+
+export const checkWalletAddressesExist = async (addresses) => {
+  const results = await Promise.all(
+    addresses.map(async (address) => {
+      const user = await getUserByWalletAddress(address.toLowerCase());
+      return {
+        address,
+        exists: !!user,
+        user,
+      };
+    })
+  );
+  return results;
+};
 
 /*
 export const encrypt = (theData) => {

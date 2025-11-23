@@ -20,8 +20,8 @@ contract MultiVaultFactory {
         string memory _name,
         address[] memory _members
     ) external returns (address vaultAddress) {
-        require(_members.length >= 2, "Se requieren al menos 2 miembros");
-        require(bytes(_name).length > 0, "El nombre no puede estar vacio");
+        require(_members.length >= 2, "At least 2 members required");
+        require(bytes(_name).length > 0, "Name cannot be empty");
 
         bool creatorIncluded = false;
         for (uint256 i = 0; i < _members.length; i++) {
@@ -30,10 +30,7 @@ contract MultiVaultFactory {
                 break;
             }
         }
-        require(
-            creatorIncluded,
-            "El creador debe estar en la lista de miembros"
-        );
+        require(creatorIncluded, "Creator must be in the members list");
 
         MultiVault newVault = new MultiVault(_name, _members);
         vaultAddress = address(newVault);
@@ -86,7 +83,7 @@ contract MultiVaultFactory {
             uint256 proposalCounter
         )
     {
-        require(isVault[_vaultAddress], "No es un vault valido");
+        require(isVault[_vaultAddress], "Not a valid vault");
         MultiVault vault = MultiVault(payable(_vaultAddress));
         return vault.getVaultInfo();
     }
@@ -95,8 +92,8 @@ contract MultiVaultFactory {
         uint256 _start,
         uint256 _end
     ) external view returns (address[] memory) {
-        require(_start < _end, "Rango invalido");
-        require(_end <= allVaults.length, "Fin fuera de rango");
+        require(_start < _end, "Invalid range");
+        require(_end <= allVaults.length, "End out of range");
 
         uint256 length = _end - _start;
         address[] memory vaultsInRange = new address[](length);
