@@ -53,7 +53,7 @@ class BlockchainService {
     }
   }
 
-  async createVault(userId, name, members, smartAccount, cdp) {
+  async createVault(name, members, smartAccount, cdp) {
     this.ensureInitialized();
 
     try {
@@ -129,8 +129,6 @@ class BlockchainService {
         const parsed = this.factoryContract.interface.parseLog(event);
         vaultAddress = parsed.args.vaultAddress;
       }
-
-      await saveVault(userId, vaultAddress);
 
       return {
         success: true,
